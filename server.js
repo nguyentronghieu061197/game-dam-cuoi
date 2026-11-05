@@ -86,6 +86,7 @@ let nextPlayerId = 1;
 
 wss.on('connection', (ws) => {
   const playerId = `guest_${nextPlayerId++}_${Math.random().toString(36).substr(2, 4)}`;
+  ws.playerId = playerId;
 
   ws.on('message', (messageRaw) => {
     try {
@@ -112,8 +113,8 @@ wss.on('connection', (ws) => {
           players: existingList
         }));
 
-        // Broadcast new player join to all other connected clients
-        broadcastExcept(playerId, {
+        // Broadcast new player join to all OTHER connected clients (exclude sender!)
+        broadcastExcept(ws, {
           type: 'player_joined',
           player: playerState
         });
@@ -128,8 +129,8 @@ wss.on('connection', (ws) => {
           p.isWalking = !!data.isWalking;
           p.lastUpdate = Date.now();
 
-          // Broadcast movement to all other players
-          broadcastExcept(playerId, {
+          // Broadcast movement to all OTHER players (exclude sender!)
+          broadcastExcept(ws, {
             type: 'player_moved',
             id: playerId,
             x: p.x,
@@ -190,18 +191,13 @@ function broadcastAll(msgObj) {
   });
 }
 
-function broadcastExcept(excludeId, msgObj) {
+function broadcastExcept(senderWs, msgObj) {
   const payload = JSON.stringify(msgObj);
   wss.clients.forEach(client => {
-    if (client.readyState === 1 && client !== getClientById(excludeId)) {
+    if (client.readyState === 1 && client !== senderWs) {
       client.send(payload);
     }
   });
-}
-
-function getClientById(id) {
-  // Helpers
-  return null;
 }
 
 server.listen(PORT, '0.0.0.0', () => {

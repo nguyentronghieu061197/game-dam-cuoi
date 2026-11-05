@@ -1041,8 +1041,23 @@ function initGame() {
     }
   }
 
+  // Ground Elevation Function (Hỗ trợ bước lên bậc thang và đi trên bục cưới!)
+  function getGroundElevation(x, z) {
+    // Sân khấu chính (Z từ -19.5 đến -28.5, chiều rộng |x| <= 11.8)
+    if (z <= -19.5 && z >= -28.5 && Math.abs(x) <= 11.8) {
+      return 1.0;
+    }
+    // Bậc tam cấp dẫn lên sân khấu từ thảm đỏ (Z từ -16.3 đến -19.5, |x| <= 4.5)
+    if (z < -16.3 && z > -19.5 && Math.abs(x) <= 4.5) {
+      const progress = (-16.3 - z) / (19.5 - 16.3);
+      return Math.max(0, Math.min(1.0, progress * 1.0));
+    }
+    return 0.0;
+  }
+
   // Helper to spawn remote player avatars
   function createRemotePlayer(data) {
+    if (!data || !data.id || data.id === selfPlayerId) return; // TRIỆT TIÊU LỖI NHÂN BẢN 2 NGƯỜI
     if (remotePlayers.has(data.id)) return;
 
     const rGroup = new THREE.Group();
@@ -1124,13 +1139,6 @@ function initGame() {
 
       socket.addEventListener('open', () => {
         console.log("🌐 Connected to Wedding Multiplayer Server!");
-        socket.send(JSON.stringify({
-          type: 'join',
-          name: playerName,
-          gender: playerGender,
-          x: playerGroup.position.x,
-          z: playerGroup.position.z
-        }));
       });
 
       socket.addEventListener('message', (event) => {
@@ -1138,10 +1146,15 @@ function initGame() {
           const data = JSON.parse(event.data);
           if (data.type === 'init') {
             selfPlayerId = data.selfId;
-            data.players.forEach(p => createRemotePlayer(p));
+            data.players.forEach(p => {
+              if (p && p.id !== selfPlayerId) createRemotePlayer(p);
+            });
           } else if (data.type === 'player_joined') {
-            createRemotePlayer(data.player);
+            if (data.player && data.player.id !== selfPlayerId) {
+              createRemotePlayer(data.player);
+            }
           } else if (data.type === 'player_moved') {
+            if (data.id === selfPlayerId) return; // Ignore own movement broadcast
             const rp = remotePlayers.get(data.id);
             if (rp) {
               rp.targetX = data.x;
@@ -1607,8 +1620,14 @@ function initGame() {
       const normX = moveX / Math.max(1, inputLen);
       const normZ = moveZ / Math.max(1, inputLen);
 
-      const worldMoveX = normX * Math.cos(cameraYaw) - normZ * Math.sin(cameraYaw);
-      const worldMoveZ = normX * Math.sin(cameraYaw) + normZ * Math.cos(cameraYaw);
+      // Chuẩn hóa vector di chuyển tuyệt đối thẳng theo hướng nhìn camera (Không bị chéo lệch!)
+      const forwardX = -Math.sin(cameraYaw);
+      const forwardZ = -Math.cos(cameraYaw);
+      const rightX = Math.cos(cameraYaw);
+      const rightZ = -Math.sin(cameraYaw);
+
+      const worldMoveX = normX * rightX - normZ * forwardX;
+      const worldMoveZ = normX * rightZ - normZ * forwardZ;
 
       playerGroup.position.x += worldMoveX * playerSpeed * delta;
       playerGroup.position.z += worldMoveZ * playerSpeed * delta;
@@ -1622,7 +1641,6 @@ function initGame() {
       playerGroup.rotation.y = currentFacingAngle;
 
       walkCycle += delta * 11;
-      playerGroup.position.y = Math.abs(Math.sin(walkCycle * 2)) * 0.05;
 
       if (playerMeshBones && playerMeshBones.mesh && initialLegQuats) {
         const swing = Math.sin(walkCycle) * 0.45;
@@ -1643,7 +1661,6 @@ function initGame() {
         playerMeshBones.mesh.skeleton.update();
       }
     } else {
-      playerGroup.position.y = 0;
       if (playerMeshBones && playerMeshBones.mesh && initialLegQuats) {
         if (playerMeshBones.la) playerMeshBones.la.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.8);
         if (playerMeshBones.ra) playerMeshBones.ra.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.8);
@@ -1652,6 +1669,11 @@ function initGame() {
         playerMeshBones.mesh.skeleton.update();
       }
     }
+
+    // Nâng hạ độ cao mượt mà theo mặt sàn & bậc tam cấp dẫn lên sân khấu lễ cưới!
+    const groundElevation = getGroundElevation(playerGroup.position.x, playerGroup.position.z);
+    const bobbing = isMoving ? Math.abs(Math.sin(walkCycle * 2)) * 0.05 : 0;
+    playerGroup.position.y += (groundElevation + bobbing - playerGroup.position.y) * Math.min(1, delta * 15);
 
     playerGroup.position.x = Math.max(-HALL.width / 2 + 1.8, Math.min(HALL.width / 2 - 1.8, playerGroup.position.x));
     playerGroup.position.z = Math.max(-30, Math.min(30, playerGroup.position.z));
@@ -1672,6 +1694,9 @@ function initGame() {
     remotePlayers.forEach(rp => {
       rp.group.position.x += (rp.targetX - rp.group.position.x) * Math.min(1, delta * 12);
       rp.group.position.z += (rp.targetZ - rp.group.position.z) * Math.min(1, delta * 12);
+
+      const rGroundElevation = getGroundElevation(rp.group.position.x, rp.group.position.z);
+      rp.group.position.y += (rGroundElevation - rp.group.position.y) * Math.min(1, delta * 15);
 
       let rDiff = rp.targetRotY - rp.group.rotation.y;
       while (rDiff < -Math.PI) rDiff += Math.PI * 2;
@@ -1720,18 +1745,17 @@ function initGame() {
       }
     }
 
-    // Camera follow
+    // Camera follow (Căn chuẩn trọng tâm không bị lệch mắt nhìn)
     const targetPos = playerGroup.position.clone().add(cameraTargetOffset);
-    const shoulderOffset = new THREE.Vector3(0.85 * Math.cos(cameraYaw), 0, -0.85 * Math.sin(cameraYaw));
     const camOffset = new THREE.Vector3(
       Math.sin(cameraYaw) * Math.cos(cameraPitch) * cameraDistance,
-      Math.sin(cameraPitch) * cameraDistance,
+      Math.sin(cameraPitch) * cameraDistance + 0.35,
       Math.cos(cameraYaw) * Math.cos(cameraPitch) * cameraDistance
-    ).add(shoulderOffset);
+    );
 
     const desiredCamPos = targetPos.clone().add(camOffset);
-    camera.position.lerp(desiredCamPos, 0.2);
-    camera.lookAt(targetPos.clone().add(new THREE.Vector3(0, 0.3, -3)));
+    camera.position.lerp(desiredCamPos, 0.25);
+    camera.lookAt(targetPos.clone().add(new THREE.Vector3(0, 0.15, 0)));
 
     confettiMeshes.forEach(c => {
       if (c.life > 0) {
@@ -1767,6 +1791,15 @@ function initGame() {
 
     renderer.render(scene, camera);
   }
+
+  // Expose debug handle for validation & tests
+  window.__game = {
+    playerGroup,
+    remotePlayers,
+    input,
+    getSelfPlayerId: () => selfPlayerId,
+    getGroundElevation
+  };
 
   animate();
 }
