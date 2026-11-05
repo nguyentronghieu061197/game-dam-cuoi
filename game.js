@@ -1158,10 +1158,33 @@ function initGame() {
     }
   }
 
+  // Smart Multiplayer WebSocket Endpoint (Tự động nhận diện GitHub Pages & Ngrok Tunnel)
+  const NGROK_WSS_TUNNEL = "0333-14-238-244-163.ngrok-free.app";
+
+  function resolveWebSocketUrl() {
+    // 1. Ưu tiên URL tham số từ query string nếu có: ?ws=xxxx hoặc ?backend=xxxx
+    const urlParams = new URLSearchParams(window.location.search);
+    const customWs = urlParams.get('ws') || urlParams.get('backend');
+    if (customWs) {
+      if (customWs.startsWith('ws://') || customWs.startsWith('wss://')) return customWs;
+      return `wss://${customWs}`;
+    }
+
+    // 2. Nếu đang chạy trên GitHub Pages (*.github.io) -> Tự động kết nối qua Ngrok WSS an toàn (HTTPS/WSS)
+    const hostname = window.location.hostname;
+    if (hostname.endsWith('github.io') || hostname === 'github.io') {
+      return `wss://${NGROK_WSS_TUNNEL}`;
+    }
+
+    // 3. Nếu chạy local / LAN (localhost, 127.0.0.1, 192.168.x.x)
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${protocol}//${window.location.host}`;
+  }
+
   function initMultiplayer() {
     try {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host}`;
+      const wsUrl = resolveWebSocketUrl();
+      console.log(`🌐 Connecting to Multiplayer Server via: ${wsUrl}`);
       socket = new WebSocket(wsUrl);
 
       socket.addEventListener('open', () => {

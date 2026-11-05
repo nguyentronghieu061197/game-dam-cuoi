@@ -1,3 +1,9 @@
 node_modules/
+*.log
+test_*.html
+game_multiplayer_complete.js
+game_multiplayer_ready.js
+*.ogg
+.DS_Store
 .DS_Store
 *.tmp
