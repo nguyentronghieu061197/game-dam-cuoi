@@ -12,6 +12,8 @@
   <meta property="og:type" content="game">
 
   <link rel="stylesheet" href="style.css">
+  <!-- Three.js 3D Engine -->
+  <script src="assets/three.min.js"></script>
 </head>
 <body>
   <div id="game-container">
@@ -43,8 +45,10 @@
         <button class="dialogue-next-btn" id="dialogueNextBtn">Tiếp tục ➔</button>
       </div>
 
-      <!-- Controls Layer (Joystick + Action Button) -->
+      <!-- Controls Layer (Joystick + Camera Swipe + Action Button) -->
       <div class="controls-layer">
+        <div class="camera-swipe-zone" id="cameraSwipeZone"></div>
+
         <div class="joystick-zone" id="joystickZone">
           <div class="joystick-thumb" id="joystickThumb"></div>
         </div>
