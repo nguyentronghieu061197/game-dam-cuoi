@@ -32,7 +32,11 @@
         <div class="quest-text" id="q1">◻️ Bỏ phong bì mừng Quân & My</div>
         <div class="quest-text" id="q2">◻️ Nếm cỗ 80 triệu & Cụng ly 1-2-3 Zô</div>
         <div class="quest-text" id="q3">◻️ Dự lễ thành hôn cùng MC & Đôi uyên ương</div>
+        <div id="onlineBadge" style="font-size: 11px; color: #86efac; margin-top: 6px; display: flex; align-items: center; gap: 4px; font-weight: bold;">🟢 1 Khách Online</div>
       </div>
+
+      <!-- Toast Notification (Thông báo khi có bạn bè vào rạp) -->
+      <div id="toastNotification" style="display: none; position: absolute; top: 75px; left: 50%; transform: translateX(-50%); background: rgba(20,10,18,0.85); border: 1.5px solid #ffd700; color: #ffd700; border-radius: 20px; padding: 8px 18px; font-size: 13px; font-weight: bold; z-index: 60; box-shadow: 0 6px 20px rgba(0,0,0,0.7); backdrop-filter: blur(10px); pointer-events: none; transition: opacity 0.3s;"></div>
 
       <!-- BGM Music Controller (Nhạc sống Hà Tây 2006) -->
       <button id="bgmToggleBtn" style="position: absolute; top: 15px; right: 15px; z-index: 40; background: rgba(20,10,18,0.8); border: 1.5px solid #ffd700; color: #ffd700; border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); backdrop-filter: blur(8px); pointer-events: auto;">

@@ -29,7 +29,6 @@ const server = http.createServer((req, res) => {
 
   const filePath = path.join(PUBLIC_DIR, reqPath);
 
-  // Security check: stay within PUBLIC_DIR
   if (!filePath.startsWith(PUBLIC_DIR)) {
     res.writeHead(403);
     res.end('Forbidden');
@@ -47,7 +46,6 @@ const server = http.createServer((req, res) => {
     const contentType = MIME_TYPES[ext] || 'application/octet-stream';
     const totalSize = stats.size;
 
-    // Support HTTP Range requests (crucial for smooth mobile audio scrubbing)
     const range = req.headers.range;
     if (range) {
       const parts = range.replace(/bytes=/, '').split('-');
@@ -80,48 +78,73 @@ const server = http.createServer((req, res) => {
 
 // 2. Real-Time Multiplayer WebSocket Server
 const wss = new WebSocketServer({ server });
-const players = new Map(); // id -> { id, name, gender, x, z, rotY, isWalking, lastUpdate }
+const players = new Map(); // ws -> playerState
 
-let nextPlayerId = 1;
+let guestCounter = 1;
+
+// Staggered distinct spawn points along the red carpet entrance so players never spawn on top of each other!
+const SPAWN_OFFSETS = [
+  { x: -0.9, z: 2.2 },
+  { x: 0.9, z: 2.2 },
+  { x: -1.3, z: 3.6 },
+  { x: 1.3, z: 3.6 },
+  { x: 0.0, z: 4.8 },
+  { x: -1.0, z: 5.8 },
+  { x: 1.0, z: 5.8 }
+];
 
 wss.on('connection', (ws) => {
-  const playerId = `guest_${nextPlayerId++}_${Math.random().toString(36).substr(2, 4)}`;
-  ws.playerId = playerId;
+  ws.isAlive = true;
+  ws.playerId = `guest_${guestCounter++}_${Math.random().toString(36).substr(2, 4)}`;
+
+  ws.on('pong', () => {
+    ws.isAlive = true;
+  });
 
   ws.on('message', (messageRaw) => {
     try {
       const data = JSON.parse(messageRaw);
 
       if (data.type === 'join') {
+        const offsetIdx = (players.size) % SPAWN_OFFSETS.length;
+        const defaultSpawn = SPAWN_OFFSETS[offsetIdx];
+
         const playerState = {
-          id: playerId,
+          id: ws.playerId,
           name: (data.name || 'Khách Quý').slice(0, 24),
           gender: data.gender === 'female' ? 'female' : 'male',
-          x: typeof data.x === 'number' ? data.x : 0,
-          z: typeof data.z === 'number' ? data.z : 2,
-          rotY: typeof data.rotY === 'number' ? data.rotY : 0,
+          x: defaultSpawn.x,
+          z: defaultSpawn.z,
+          rotY: Math.PI, // Facing forward towards stage!
           isWalking: false,
           lastUpdate: Date.now()
         };
-        players.set(playerId, playerState);
+        players.set(ws, playerState);
 
-        // Send confirmation & existing players to the new player
-        const existingList = Array.from(players.values()).filter(p => p.id !== playerId);
-        ws.send(JSON.stringify({
-          type: 'init',
-          selfId: playerId,
-          players: existingList
-        }));
-
-        // Broadcast new player join to all OTHER connected clients (exclude sender!)
-        broadcastExcept(ws, {
-          type: 'player_joined',
-          player: playerState
+        // 1. Send all OTHER existing active players to this newly joined player
+        const existingList = [];
+        players.forEach((pState, otherWs) => {
+          if (otherWs !== ws) existingList.push(pState);
         });
 
-        console.log(`[+] Player joined: ${playerState.name} (${playerId}) [Total: ${players.size}]`);
+        ws.send(JSON.stringify({
+          type: 'init',
+          selfId: ws.playerId,
+          assignedSpawn: { x: playerState.x, z: playerState.z },
+          players: existingList,
+          onlineCount: players.size
+        }));
+
+        // 2. Broadcast new player join to all OTHER connected clients!
+        broadcastExcept(ws, {
+          type: 'player_joined',
+          player: playerState,
+          onlineCount: players.size
+        });
+
+        console.log(`[+] Player joined: "${playerState.name}" (${ws.playerId}) at (${playerState.x.toFixed(1)}, ${playerState.z.toFixed(1)}) | Total Online: ${players.size}`);
       } else if (data.type === 'move') {
-        const p = players.get(playerId);
+        const p = players.get(ws);
         if (p) {
           p.x = data.x;
           p.z = data.z;
@@ -129,10 +152,9 @@ wss.on('connection', (ws) => {
           p.isWalking = !!data.isWalking;
           p.lastUpdate = Date.now();
 
-          // Broadcast movement to all OTHER players (exclude sender!)
           broadcastExcept(ws, {
             type: 'player_moved',
-            id: playerId,
+            id: ws.playerId,
             x: p.x,
             z: p.z,
             rotY: p.rotY,
@@ -140,30 +162,28 @@ wss.on('connection', (ws) => {
           });
         }
       } else if (data.type === 'chat') {
-        const p = players.get(playerId);
+        const p = players.get(ws);
         const text = (data.text || '').trim().slice(0, 100);
         if (text) {
-          // Broadcast chat message to EVERYONE (including sender)
           broadcastAll({
             type: 'player_chat',
-            id: playerId,
+            id: ws.playerId,
             name: p ? p.name : 'Khách Quý',
             text: text
           });
-          console.log(`[💬] Chat from ${p ? p.name : playerId}: ${text}`);
+          console.log(`[💬] Chat from ${p ? p.name : ws.playerId}: ${text}`);
         }
       } else if (data.type === 'reaction') {
-        const p = players.get(playerId);
+        const p = players.get(ws);
         const emoji = data.emoji;
         if (emoji) {
-          // Broadcast reaction to EVERYONE (including sender)
           broadcastAll({
             type: 'player_reaction',
-            id: playerId,
+            id: ws.playerId,
             name: p ? p.name : 'Khách Quý',
             emoji: emoji
           });
-          console.log(`[🎉] Reaction from ${p ? p.name : playerId}: ${emoji}`);
+          console.log(`[🎉] Reaction from ${p ? p.name : ws.playerId}: ${emoji}`);
         }
       }
     } catch (e) {
@@ -172,16 +192,41 @@ wss.on('connection', (ws) => {
   });
 
   ws.on('close', () => {
-    const p = players.get(playerId);
-    players.delete(playerId);
+    const p = players.get(ws);
+    players.delete(ws);
     if (p) {
-      console.log(`[-] Player left: ${p.name} (${playerId}) [Remaining: ${players.size}]`);
+      console.log(`[-] Player left: "${p.name}" (${ws.playerId}) | Remaining: ${players.size}`);
       broadcastAll({
         type: 'player_left',
-        id: playerId
+        id: ws.playerId,
+        onlineCount: players.size
       });
     }
   });
+
+  ws.on('error', (err) => {
+    console.error('Socket error:', ws.playerId, err.message);
+  });
+});
+
+// Periodic Heartbeat to clean up dead/closed sockets immediately
+const heartbeatInterval = setInterval(() => {
+  wss.clients.forEach((ws) => {
+    if (ws.isAlive === false) {
+      const p = players.get(ws);
+      players.delete(ws);
+      if (p) {
+        broadcastAll({ type: 'player_left', id: ws.playerId, onlineCount: players.size });
+      }
+      return ws.terminate();
+    }
+    ws.isAlive = false;
+    ws.ping();
+  });
+}, 5000);
+
+wss.on('close', () => {
+  clearInterval(heartbeatInterval);
 });
 
 function broadcastAll(msgObj) {

@@ -1015,15 +1015,6 @@ function initGame() {
     const model = cloneSkinnedGltf(tmpl);
     model.scale.set(1.35, 1.35, 1.35);
 
-    if (playerGender === 'female') {
-      model.traverse(child => {
-        if (child.isMesh && child.material) {
-          child.material = child.material.clone();
-          child.material.color = new THREE.Color(0xdc2626);
-        }
-      });
-    }
-
     poseFormalStanding(model);
     playerGroup.add(model);
     currentPlayerModel = model;
@@ -1075,15 +1066,6 @@ function initGame() {
     const model = cloneSkinnedGltf(tmpl);
     model.scale.set(1.35, 1.35, 1.35);
 
-    if (isWoman) {
-      model.traverse(child => {
-        if (child.isMesh && child.material) {
-          child.material = child.material.clone();
-          child.material.color = new THREE.Color(0xdc2626);
-        }
-      });
-    }
-
     poseFormalStanding(model);
     rGroup.add(model);
 
@@ -1132,9 +1114,47 @@ function initGame() {
     remotePlayers.delete(id);
   }
 
+  // --- SYSTEM TOAST & ONLINE COUNT ---
+  let toastTimeout = null;
+  function showSystemToast(text) {
+    const t = document.getElementById('toastNotification');
+    if (!t) return;
+    t.textContent = text;
+    t.style.display = 'block';
+    t.style.opacity = '1';
+    clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => {
+      t.style.opacity = '0';
+      setTimeout(() => { t.style.display = 'none'; }, 300);
+    }, 4500);
+  }
+
+  function updateOnlineCountBadge(count) {
+    const badge = document.getElementById('onlineBadge');
+    if (!badge) return;
+    const c = count || (remotePlayers.size + 1);
+    badge.innerHTML = `🟢 <span style="color:#ffd700; font-weight:bold;">${c} Khách</span> Đang Dự Tiệc`;
+  }
+
   // --- MULTIPLAYER WEBSOCKET CONNECTION ---
   let socket = null;
   let selfPlayerId = null;
+  let hasEnteredWedding = false;
+  let hasSentJoin = false;
+
+  function sendJoinPacket() {
+    if (!hasSentJoin && socket && socket.readyState === WebSocket.OPEN) {
+      hasSentJoin = true;
+      socket.send(JSON.stringify({
+        type: 'join',
+        name: playerName,
+        gender: playerGender,
+        x: playerGroup.position.x,
+        z: playerGroup.position.z
+      }));
+      console.log("📤 Sent join packet to wedding server!");
+    }
+  }
 
   function initMultiplayer() {
     try {
@@ -1144,6 +1164,9 @@ function initGame() {
 
       socket.addEventListener('open', () => {
         console.log("🌐 Connected to Wedding Multiplayer Server!");
+        if (hasEnteredWedding) {
+          sendJoinPacket();
+        }
       });
 
       socket.addEventListener('message', (event) => {
@@ -1151,13 +1174,20 @@ function initGame() {
           const data = JSON.parse(event.data);
           if (data.type === 'init') {
             selfPlayerId = data.selfId;
+            if (data.assignedSpawn) {
+              playerGroup.position.set(data.assignedSpawn.x, 0, data.assignedSpawn.z);
+            }
             data.players.forEach(p => {
               if (p && p.id !== selfPlayerId) createRemotePlayer(p);
             });
+            updateOnlineCountBadge(data.onlineCount);
           } else if (data.type === 'player_joined') {
             if (data.player && data.player.id !== selfPlayerId) {
               createRemotePlayer(data.player);
+              showSystemToast(`🎊 "${data.player.name}" vừa bước vào rạp cưới!`);
+              playSound('cheer');
             }
+            updateOnlineCountBadge(data.onlineCount);
           } else if (data.type === 'player_moved') {
             if (data.id === selfPlayerId) return; // Ignore own movement broadcast
             const rp = remotePlayers.get(data.id);
@@ -1183,6 +1213,7 @@ function initGame() {
             }
           } else if (data.type === 'player_left') {
             removeRemotePlayer(data.id);
+            updateOnlineCountBadge(data.onlineCount);
           }
         } catch (e) {
           console.error("Multiplayer packet error:", e);
@@ -1190,8 +1221,9 @@ function initGame() {
       });
 
       socket.addEventListener('close', () => {
-        console.log("Multiplayer socket disconnected. Retrying in 4s...");
-        setTimeout(initMultiplayer, 4000);
+        console.log("Multiplayer socket disconnected. Retrying in 3s...");
+        hasSentJoin = false;
+        setTimeout(initMultiplayer, 3000);
       });
     } catch (e) {
       console.log("Multiplayer setup notice:", e);
@@ -1466,15 +1498,8 @@ function initGame() {
       setupPlayerAvatar();
 
       // Send join event to server
-      if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({
-          type: 'join',
-          name: playerName,
-          gender: playerGender,
-          x: playerGroup.position.x,
-          z: playerGroup.position.z
-        }));
-      }
+      hasEnteredWedding = true;
+      sendJoinPacket();
 
       if (welcomeModal) welcomeModal.style.display = 'none';
       getAudioContext();
