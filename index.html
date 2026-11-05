@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Đám Cưới Quân & My - Rạp Khủng 80 Triệu</title>
+  <!-- Facebook Instant Games SDK -->
+  <script src="https://connect.facebook.net/en_US/fbinstant.7.1.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- UI Overlay Layer -->
+    <div id="ui-layer">
+      <!-- Quest Bar -->
+      <div class="quest-bar">
+        <div class="quest-title">
+          <span>💒 Lễ Thành Hôn: Quân & My</span>
+          <span style="font-size: 11px; color: #fca5a5;">Rạp 80 Triệu</span>
+        </div>
+        <div class="quest-text" id="q1">◻️ Bỏ phong bì mừng Quân & My</div>
+        <div class="quest-text" id="q2">◻️ Nếm cỗ 80 triệu & Cụng ly 1-2-3 Zô</div>
+        <div class="quest-text" id="q3">◻️ Dự lễ thành hôn cùng MC & Đôi uyên ương</div>
+      </div>
+
+      <!-- Interaction Prompt -->
+      <div class="interact-prompt" id="interactPrompt">Bấm A để tương tác</div>
+
+      <!-- Dialogue Box -->
+      <div class="dialogue-box" id="dialogueBox">
+        <div class="dialogue-header">
+          <div class="dialogue-avatar" id="dialogueAvatar"></div>
+          <div class="dialogue-speaker" id="dialogueSpeaker">MC Đám Cưới</div>
+        </div>
+        <div class="dialogue-content" id="dialogueContent">Nội dung hội thoại...</div>
+        <button class="dialogue-next-btn" id="dialogueNextBtn">Tiếp tục ➔</button>
+      </div>
+
+      <!-- Controls Layer (Joystick + Action Button) -->
+      <div class="controls-layer">
+        <div class="joystick-zone" id="joystickZone">
+          <div class="joystick-thumb" id="joystickThumb"></div>
+        </div>
+
+        <div class="action-btn-zone">
+          <button class="action-btn" id="actionBtn">
+            <span style="font-size: 20px;">👆</span>
+            <span>A</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Gift Envelope Modal -->
+      <div class="modal" id="giftModal">
+        <div class="modal-content">
+          <button class="modal-close">&times;</button>
+          <div class="modal-title">🧧 Hòm Bỏ Phong Bì Mừng Hỷ</div>
+          <p style="font-size: 13px; color: #fecdd3; margin-bottom: 10px;">
+            Gửi gắm lời chúc mừng trăm năm hạnh phúc tới <b>Chú rể Quân & Cô dâu My</b>:
+          </p>
+          <div class="gift-options">
+            <button class="gift-btn" data-amount="200.000 VNĐ">200.000 đ</button>
+            <button class="gift-btn selected" data-amount="500.000 VNĐ">500.000 đ</button>
+            <button class="gift-btn" data-amount="1.000.000 VNĐ">1.000.000 đ</button>
+            <button class="gift-btn" data-amount="2.000.000 VNĐ">2.000.000 đ</button>
+          </div>
+          <input type="text" class="gift-input" id="giftWishInput" placeholder="Nhập lời chúc riêng của bạn...">
+          <button class="submit-btn" id="submitGiftBtn">Bỏ Phong Bì Mừng Cưới 💌</button>
+        </div>
+      </div>
+
+      <!-- Feast Table Modal -->
+      <div class="modal" id="feastModal">
+        <div class="modal-content">
+          <button class="modal-close">&times;</button>
+          <div class="modal-title">🍗 Mâm Cỗ Miền Bắc 80 Triệu</div>
+          <p style="font-size: 13px; color: #fecdd3;">Thực đơn cỗ cưới truyền thống cao cấp:</p>
+          <div class="feast-list">
+            • 🐓 Gà trống đồi hấp lá chanh<br>
+            • 🍚 Xôi gấc ba tầng hạt sen<br>
+            • 🍤 Tôm chiên ngự bào hoàng gia<br>
+            • 🥩 Bò xào măng tây cần tỏi<br>
+            • 🍲 Canh bóng thập cẩm thanh ngọt<br>
+            • 🍻 Bia lon Hà Nội mát lạnh
+          </div>
+          <button class="submit-btn" id="toastFeastBtn">Nâng Ly 1, 2, 3... DÔ! 🍻</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
