@@ -76,7 +76,7 @@ const audios = {
   mc_toast: new Audio('assets/audio/mc_toast.mp3')
 };
 
-const bgm = new Audio('assets/audio/wedding_bgm_hatay.mp3');
+const bgm = new Audio('assets/audio/dam-cuoi.mp3');
 bgm.loop = true;
 bgm.volume = 0.38; // Upbeat background level perfectly balanced under MC voice
 let isBgmPlaying = false;
@@ -807,17 +807,34 @@ function initGame() {
   // Avatar Templates
   let avatarTemplates = { male: null, female: null, elder: null };
 
-  // Multiplayer Remote Players Map: playerId -> { group, model, label, targetX, targetZ, targetRotY, isWalking, bones }
+  // Mixamo Humanoid Animation Clips Cache
+  const animClips = {};
+
+  // Multiplayer Remote Players Map: playerId -> { group, model, label, targetX, targetZ, targetRotY, isWalking, bones, mixer, actions }
   const remotePlayers = new Map();
 
   Promise.all([
     loadGltfAsync('assets/models/avatars/Asian_M_1_Busi.glb'),
     loadGltfAsync('assets/models/avatars/Asian_F_1_Busi.glb'),
-    loadGltfAsync('assets/models/avatars/Asian_M_2_Busi.glb')
-  ]).then(([m1Gltf, f1Gltf, m2Gltf]) => {
+    loadGltfAsync('assets/models/avatars/Asian_M_2_Busi.glb'),
+    loadGltfAsync('assets/animations/walking.glb'),
+    loadGltfAsync('assets/animations/clapping.glb'),
+    loadGltfAsync('assets/animations/dance.glb'),
+    loadGltfAsync('assets/animations/laugh.glb'),
+    loadGltfAsync('assets/animations/cheering.glb'),
+    loadGltfAsync('assets/animations/drunk.glb')
+  ]).then(([m1Gltf, f1Gltf, m2Gltf, walkGltf, clapGltf, danceGltf, laughGltf, cheerGltf, drunkGltf]) => {
     avatarTemplates.male = m1Gltf.scene;
     avatarTemplates.female = f1Gltf.scene;
     avatarTemplates.elder = m2Gltf.scene;
+
+    // Load authentic Mixamo mocap animations
+    if (walkGltf && walkGltf.animations) animClips.walk = walkGltf.animations[0];
+    if (clapGltf && clapGltf.animations) animClips.clap = clapGltf.animations[0];
+    if (danceGltf && danceGltf.animations) animClips.dance = danceGltf.animations[0];
+    if (laughGltf && laughGltf.animations) animClips.laugh = laughGltf.animations[0];
+    if (cheerGltf && cheerGltf.animations) animClips.toast = cheerGltf.animations[0];
+    if (drunkGltf && drunkGltf.animations) animClips.stumble = drunkGltf.animations[0];
 
     // 1. Setup Local Player Avatar
     setupPlayerAvatar();
@@ -1106,11 +1123,19 @@ function initGame() {
   }
 
   let currentPlayerModel = null;
+  let playerMixer = null;
+  const playerActions = {};
+  let currentGestureAction = null;
+  let gestureActionTimer = 0;
 
   function setupPlayerAvatar() {
     if (!avatarTemplates.male || !avatarTemplates.female) return;
 
     if (currentPlayerModel) {
+      if (playerMixer) {
+        playerMixer.stopAllAction();
+        playerMixer = null;
+      }
       playerGroup.remove(currentPlayerModel);
       currentPlayerModel = null;
     }
@@ -1125,6 +1150,18 @@ function initGame() {
     poseFormalStanding(model);
     playerGroup.add(model);
     currentPlayerModel = model;
+
+    // Khởi tạo AnimationMixer với bộ hoạt ảnh Mixamo chân thực
+    if (animClips.walk) {
+      playerMixer = new THREE.AnimationMixer(model);
+      for (const [key, clip] of Object.entries(animClips)) {
+        if (clip) {
+          const act = playerMixer.clipAction(clip);
+          act.setLoop(THREE.LoopRepeat);
+          playerActions[key] = act;
+        }
+      }
+    }
 
     const pMesh = model.getObjectByName('H_DDS_HighRes');
     if (pMesh && pMesh.skeleton) {
@@ -1215,6 +1252,19 @@ function initGame() {
       };
     }
 
+    let rMixer = null;
+    const rActions = {};
+    if (animClips.walk) {
+      rMixer = new THREE.AnimationMixer(model);
+      for (const [key, clip] of Object.entries(animClips)) {
+        if (clip) {
+          const act = rMixer.clipAction(clip);
+          act.setLoop(THREE.LoopRepeat);
+          rActions[key] = act;
+        }
+      }
+    }
+
     remotePlayers.set(data.id, {
       id: data.id,
       name: data.name,
@@ -1222,6 +1272,10 @@ function initGame() {
       model: model,
       bones: rBones,
       label: label,
+      mixer: rMixer,
+      actions: rActions,
+      currentGesture: null,
+      gestureTimer: 0,
       targetX: data.x || 0,
       targetZ: data.z || 2,
       targetRotY: data.rotY || 0,
@@ -1373,8 +1427,19 @@ function initGame() {
           } else if (data.type === 'player_anim') {
             const rp = remotePlayers.get(data.id);
             if (rp) {
-              rp.currentAnim = data.action;
-              rp.animTime = 0;
+              if (data.text) showSpeechBubble(rp.group, data.text);
+              if (data.emoji) spawnFloatingReaction(rp.group, data.emoji);
+              if (data.action === 'clap' || data.action === 'laugh') playSound('cheer');
+              if (data.action === 'toast') playSound('clink');
+
+              if (rp.actions && rp.actions[data.action]) {
+                if (rp.currentGesture && rp.currentGesture !== rp.actions[data.action]) {
+                  rp.currentGesture.fadeOut(0.2);
+                }
+                rp.currentGesture = rp.actions[data.action];
+                rp.currentGesture.reset().fadeIn(0.25).play();
+                rp.gestureTimer = 5.0;
+              }
             }
           } else if (data.type === 'player_sit') {
             const rp = remotePlayers.get(data.id);
@@ -1685,7 +1750,7 @@ function initGame() {
     if (bgmIcon && bgmText && bgmToggleBtn) {
       if (isBgmPlaying) {
         bgmIcon.textContent = '🔊';
-        bgmText.textContent = 'Nhạc Sống Hà Tây';
+        bgmText.textContent = 'Nhạc Đám Cưới';
         bgmToggleBtn.style.borderColor = '#ffd700';
         bgmToggleBtn.style.color = '#ffd700';
       } else {
@@ -1733,36 +1798,54 @@ function initGame() {
     });
   });
 
-  let currentActionAnim = null;
-  let actionAnimTimer = 0;
-
   function triggerActionGesture(animName) {
     if (isPlayerSeated && animName === 'stumble') return;
-    currentActionAnim = animName;
-    actionAnimTimer = 4.5;
+
+    let animText = "👏 Hay quá!";
+    let animEmoji = "👏";
 
     if (animName === 'clap') {
+      animText = "👏 Hay quá!";
+      animEmoji = "👏";
       playSound('cheer');
-      showSpeechBubble(playerGroup, "👏 Hay quá!");
-      spawnFloatingReaction(playerGroup, "👏");
     } else if (animName === 'dance') {
-      showSpeechBubble(playerGroup, "💃 Quẩy lên!");
-      spawnFloatingReaction(playerGroup, "🥳");
+      animText = "💃 Quẩy lên!";
+      animEmoji = "🥳";
     } else if (animName === 'toast') {
+      animText = "🍻 1-2-3 DÔ!";
+      animEmoji = "🥂";
       playSound('clink');
-      showSpeechBubble(playerGroup, "🍻 1-2-3 DÔ!");
-      spawnFloatingReaction(playerGroup, "🥂");
     } else if (animName === 'laugh') {
+      animText = "😂 Ha ha ha!";
+      animEmoji = "🤣";
       playSound('cheer');
-      showSpeechBubble(playerGroup, "😂 Ha ha ha!");
-      spawnFloatingReaction(playerGroup, "🤣");
     } else if (animName === 'stumble') {
-      showSpeechBubble(playerGroup, "🥴 Say quá rồi...");
-      spawnFloatingReaction(playerGroup, "💫");
+      animText = "🥴 Say quá rồi...";
+      animEmoji = "💫";
     }
 
+    // Hiển thị bóng thoại và reaction ngay lập tức cho chính mình
+    showSpeechBubble(playerGroup, animText);
+    spawnFloatingReaction(playerGroup, animEmoji);
+
+    // Kích hoạt Mixamo Action thực tế chuyên nghiệp
+    if (playerActions && playerActions[animName]) {
+      if (currentGestureAction && currentGestureAction !== playerActions[animName]) {
+        currentGestureAction.fadeOut(0.2);
+      }
+      currentGestureAction = playerActions[animName];
+      currentGestureAction.reset().fadeIn(0.25).play();
+      gestureActionTimer = 5.0; // Chạy 5s rồi fade out về idle
+    }
+
+    // Gửi broadcast qua WebSocket có đầy đủ text, emoji và action
     if (socket && socket.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify({ type: 'anim', action: animName }));
+      socket.send(JSON.stringify({
+        type: 'anim',
+        action: animName,
+        text: animText,
+        emoji: animEmoji
+      }));
     }
   }
 
@@ -2095,73 +2178,37 @@ function initGame() {
       currentFacingAngle += diff * Math.min(1, delta * 14);
       playerGroup.rotation.y = currentFacingAngle;
 
-      walkCycle += delta * 11;
-
-      if (playerMeshBones && playerMeshBones.mesh && initialLegQuats) {
-        const swing = Math.sin(walkCycle) * 0.45;
-        if (playerMeshBones.la) playerMeshBones.la.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.8 + swing);
-        if (playerMeshBones.ra) playerMeshBones.ra.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.8 - swing);
-        
-        if (playerMeshBones.lul) {
-          playerMeshBones.lul.quaternion.copy(initialLegQuats.lul).multiply(
-            new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), swing)
-          );
+      // Mixamo Walking Mocap Animation (Bước chân so le mượt mà, chân thực 100%)
+      if (playerActions && playerActions.walk) {
+        if (!playerActions.walk.isRunning()) {
+          if (currentGestureAction) {
+            currentGestureAction.fadeOut(0.15);
+            currentGestureAction = null;
+          }
+          playerActions.walk.reset().fadeIn(0.2).play();
         }
-        if (playerMeshBones.rul) {
-          playerMeshBones.rul.quaternion.copy(initialLegQuats.rul).multiply(
-            new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), -swing)
-          );
-        }
-
-        playerMeshBones.mesh.skeleton.update();
       }
       wasMoving = true;
     } else if (!isPlayerSeated) {
       if (wasMoving) {
         wasMoving = false;
-        if (playerMeshBones && playerMeshBones.mesh && initialLegQuats) {
-          if (playerMeshBones.la) playerMeshBones.la.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.8);
-          if (playerMeshBones.ra) playerMeshBones.ra.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.8);
-          if (playerMeshBones.lul) playerMeshBones.lul.quaternion.copy(initialLegQuats.lul);
-          if (playerMeshBones.rul) playerMeshBones.rul.quaternion.copy(initialLegQuats.rul);
-          playerMeshBones.mesh.skeleton.update();
+        if (playerActions && playerActions.walk && playerActions.walk.isRunning()) {
+          playerActions.walk.fadeOut(0.25);
         }
       }
+    }
 
-      // Procedural Gesture Animations (Vỗ tay, Quẩy, Cụng ly, Cười, Ngã)
-      if (currentActionAnim && actionAnimTimer > 0 && playerMeshBones && playerMeshBones.mesh) {
-        actionAnimTimer -= delta;
-        const t = performance.now() * 0.007;
-        if (currentActionAnim === 'clap') {
-          const clapSwing = Math.sin(t * 18) * 0.35;
-          if (playerMeshBones.la) playerMeshBones.la.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -0.6 + clapSwing);
-          if (playerMeshBones.ra) playerMeshBones.ra.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), 0.6 - clapSwing);
-        } else if (currentActionAnim === 'dance') {
-          const danceSwing = Math.sin(t * 11) * 0.65;
-          if (playerMeshBones.la) playerMeshBones.la.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 3 + danceSwing);
-          if (playerMeshBones.ra) playerMeshBones.ra.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 3 - danceSwing);
-          playerGroup.rotation.y = currentFacingAngle + Math.sin(t * 9) * 0.22;
-        } else if (currentActionAnim === 'toast') {
-          if (playerMeshBones.ra) playerMeshBones.ra.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 1.5);
-          if (playerMeshBones.la) playerMeshBones.la.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 3.2);
-        } else if (currentActionAnim === 'laugh') {
-          const shake = Math.sin(t * 22) * 0.14;
-          if (playerMeshBones.la) playerMeshBones.la.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.6 + shake);
-          if (playerMeshBones.ra) playerMeshBones.ra.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.6 - shake);
-        } else if (currentActionAnim === 'stumble') {
-          const stumbleWobble = Math.sin(t * 7) * 0.45;
-          playerGroup.rotation.z = stumbleWobble * 0.2;
-          if (playerMeshBones.la) playerMeshBones.la.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 1), stumbleWobble);
-          if (playerMeshBones.ra) playerMeshBones.ra.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, -1), -stumbleWobble);
-        }
-        if (actionAnimTimer <= 0) {
-          currentActionAnim = null;
-          playerGroup.rotation.z = 0;
-          if (playerMeshBones.la) playerMeshBones.la.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.8);
-          if (playerMeshBones.ra) playerMeshBones.ra.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.8);
-        }
-        playerMeshBones.mesh.skeleton.update();
+    // Gesture timer update for local player
+    if (currentGestureAction && gestureActionTimer > 0) {
+      gestureActionTimer -= delta;
+      if (gestureActionTimer <= 0) {
+        currentGestureAction.fadeOut(0.3);
+        currentGestureAction = null;
       }
+    }
+
+    if (playerMixer && !isPlayerSeated) {
+      playerMixer.update(delta);
     }
 
     // Nâng hạ độ cao mượt mà theo mặt sàn & bậc tam cấp dẫn lên sân khấu lễ cưới!
@@ -2257,53 +2304,36 @@ function initGame() {
             );
           }
           rp.bones.mesh.skeleton.update();
-        } else if (rp.isWalking) {
-          rp.wasWalking = true;
-          rp.walkCycle += delta * 11;
-          const rSwing = Math.sin(rp.walkCycle) * 0.45;
-          if (rp.bones.la) rp.bones.la.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.8 + rSwing);
-          if (rp.bones.ra) rp.bones.ra.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.8 - rSwing);
-          if (rp.bones.lul && rp.bones.initialLegs) {
-            rp.bones.lul.quaternion.copy(rp.bones.initialLegs.lul).multiply(
-              new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), rSwing)
-            );
+        } else {
+          // Mixamo Walking & Gestures cho người chơi từ xa
+          if (rp.actions && rp.actions.walk) {
+            if (rp.isWalking) {
+              if (!rp.actions.walk.isRunning()) {
+                if (rp.currentGesture) {
+                  rp.currentGesture.fadeOut(0.15);
+                  rp.currentGesture = null;
+                }
+                rp.actions.walk.reset().fadeIn(0.2).play();
+              }
+            } else {
+              if (rp.actions.walk.isRunning()) {
+                rp.actions.walk.fadeOut(0.25);
+              }
+            }
           }
-          if (rp.bones.rul && rp.bones.initialLegs) {
-            rp.bones.rul.quaternion.copy(rp.bones.initialLegs.rul).multiply(
-              new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), -rSwing)
-            );
+
+          // Remote gesture timer
+          if (rp.currentGesture && rp.gestureTimer > 0) {
+            rp.gestureTimer -= delta;
+            if (rp.gestureTimer <= 0) {
+              rp.currentGesture.fadeOut(0.3);
+              rp.currentGesture = null;
+            }
           }
-          rp.bones.mesh.skeleton.update();
-        } else if (rp.currentAnim && rp.currentAnim !== 'idle') {
-          // Hoạt ảnh biểu cảm cử chỉ cho người chơi từ xa
-          rp.animTime = (rp.animTime || 0) + delta;
-          const rt = rp.animTime * 6;
-          if (rp.currentAnim === 'clap') {
-            const cSw = Math.sin(rt * 16) * 0.35;
-            if (rp.bones.la) rp.bones.la.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -0.6 + cSw);
-            if (rp.bones.ra) rp.bones.ra.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), 0.6 - cSw);
-          } else if (rp.currentAnim === 'dance') {
-            const dSw = Math.sin(rt * 11) * 0.65;
-            if (rp.bones.la) rp.bones.la.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 3 + dSw);
-            if (rp.bones.ra) rp.bones.ra.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 3 - dSw);
-          } else if (rp.currentAnim === 'toast') {
-            if (rp.bones.ra) rp.bones.ra.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 1.5);
-          } else if (rp.currentAnim === 'stumble') {
-            const sWob = Math.sin(rt * 7) * 0.45;
-            rp.group.rotation.z = sWob * 0.2;
+
+          if (rp.mixer) {
+            rp.mixer.update(delta);
           }
-          if (rp.animTime > 4.5) {
-            rp.currentAnim = 'idle';
-            rp.group.rotation.z = 0;
-          }
-          rp.bones.mesh.skeleton.update();
-        } else if (rp.wasWalking) {
-          rp.wasWalking = false;
-          if (rp.bones.la) rp.bones.la.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.8);
-          if (rp.bones.ra) rp.bones.ra.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.8);
-          if (rp.bones.lul && rp.bones.initialLegs) rp.bones.lul.quaternion.copy(rp.bones.initialLegs.lul);
-          if (rp.bones.rul && rp.bones.initialLegs) rp.bones.rul.quaternion.copy(rp.bones.initialLegs.rul);
-          rp.bones.mesh.skeleton.update();
         }
       }
     });
@@ -2410,6 +2440,7 @@ function initGame() {
     remotePlayers,
     input,
     getSelfPlayerId: () => selfPlayerId,
+    getSocket: () => socket,
     getGroundElevation,
     showSpeechBubble,
     spawnFloatingReaction,

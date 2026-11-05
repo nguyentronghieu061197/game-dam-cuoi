@@ -373,3 +373,72 @@ canvas#gameCanvas {
   font-size: 14px;
   line-height: 1.6;
 }
+
+/* Mobile Controls & Layout: Tách biệt hoàn toàn Joystick & Nút A khỏi thanh cử chỉ và chat */
+@media (max-width: 768px) {
+  .joystick-zone {
+    left: 12px !important;
+    bottom: 20px !important;
+    width: 105px !important;
+    height: 105px !important;
+    z-index: 85 !important;
+  }
+  
+  .joystick-thumb {
+    width: 44px !important;
+    height: 44px !important;
+    margin-left: -22px !important;
+    margin-top: -22px !important;
+  }
+
+  .action-btn-zone {
+    right: 12px !important;
+    bottom: 24px !important;
+    z-index: 85 !important;
+  }
+
+  .action-btn {
+    width: 66px !important;
+    height: 66px !important;
+    font-size: 13px !important;
+  }
+
+  #gestureBar {
+    bottom: 74px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    max-width: calc(100vw - 225px) !important;
+    z-index: 55 !important;
+    pointer-events: none !important;
+    padding: 0 !important;
+    gap: 4px !important;
+  }
+
+  .gesture-btn {
+    pointer-events: auto !important;
+    padding: 4px 7px !important;
+    font-size: 11px !important;
+    border-radius: 12px !important;
+  }
+
+  #chatOverlay {
+    bottom: 16px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    max-width: calc(100vw - 225px) !important;
+    width: auto !important;
+    z-index: 55 !important;
+    pointer-events: none !important;
+  }
+
+  #chatInput {
+    height: 38px !important;
+    font-size: 12px !important;
+    padding: 0 10px !important;
+    pointer-events: auto !important;
+  }
+
+  #sendChatBtn, #reactionToggleBtn {
+    pointer-events: auto !important;
+  }
+}

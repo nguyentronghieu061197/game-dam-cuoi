@@ -213,9 +213,11 @@ wss.on('connection', (ws) => {
           broadcastExcept(ws, {
             type: 'player_anim',
             id: ws.playerId,
-            action: action
+            action: action,
+            text: data.text,
+            emoji: data.emoji
           });
-          console.log(`[💃] Animation gesture from ${p.name}: ${action}`);
+          console.log(`[💃] Animation gesture from ${p.name}: ${action} (text: ${data.text}, emoji: ${data.emoji})`);
         }
       } else if (data.type === 'sit') {
         const p = players.get(ws);
