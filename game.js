@@ -1,12 +1,12 @@
 /**
- * Masterpiece 3D Wedding Simulation (Rạp Cưới 80 Triệu Miền Bắc)
- * Recreating the real-life luxury wedding marquee reference:
- * - Real Asian Human Models with Proper Skeletal Poses (Standing & Seated)
- * - Billowing Silk Ceiling Swags (Blush Pink & Ivory White) at authentic tent height (5.0m)
- * - Cascading Crystal Chandeliers & Fairy Light Webs
- * - Pleated Side Wall Curtains & Pink Scalloped Valances
- * - Banquet Tables with Seated Guests (Full & Partial Seating)
- * - Stage Backdrop with Golden Double Happiness (囍), Arch Alcoves, and LED Screen
+ * Photorealistic 3D Wedding Simulation (Rạp Cưới 80 Triệu Miền Bắc)
+ * Direct 1:1 Match with the Luxury Reference Photo:
+ * 1. Over-the-shoulder Cinematic TPP Camera (Full unobstructed view of the aisle & grand stage!)
+ * 2. True Velvet Crimson Carpet with 24K Gold Braided Borders (Using velvet_carpet_hires.png)
+ * 3. Dense Organic Floral Hedges with Real Cutout Petals & Cascading Orchids (floral_cluster_hires.png & orchid_spray_hires.png)
+ * 4. High-Resolution Razor-Sharp Stage LED Screen (stage_screen_hires.png with Golden 囍, QUÂN & MY)
+ * 5. Multi-generational Seated Crowd (Women in Vibrant Cocktail Gowns, Men in Suits, Elders)
+ * 6. Scalloped Chiffon Ceiling Swags & 13 Royal Crystal Chandeliers
  */
 
 function cloneSkinnedGltf(source) {
@@ -31,7 +31,7 @@ function cloneSkinnedGltf(source) {
   return clone;
 }
 
-function poseFormalGentleman(model) {
+function poseFormalStanding(model) {
   const mesh = model.getObjectByName('H_DDS_HighRes');
   if (!mesh || !mesh.skeleton) return;
   const la = mesh.skeleton.bones.find(b => b.name === 'LeftArm');
@@ -42,7 +42,7 @@ function poseFormalGentleman(model) {
 }
 
 function poseSeatedGuest(model) {
-  poseFormalGentleman(model);
+  poseFormalStanding(model);
 }
 
 let playerName = "Khách Quý";
@@ -117,30 +117,30 @@ function playSound(type) {
   }
 }
 
-// Procedural Textures
+// Procedural PBR Floor Texture
 function createBallroomFloorTexture() {
   const c = document.createElement('canvas');
   c.width = 512; c.height = 512;
   const ctx = c.getContext('2d');
 
-  ctx.fillStyle = '#220812';
+  ctx.fillStyle = '#141416';
   ctx.fillRect(0, 0, 512, 512);
 
   const tileSize = 256;
   for (let x = 0; x < 512; x += tileSize) {
     for (let y = 0; y < 512; y += tileSize) {
-      ctx.fillStyle = '#2d0c18';
+      ctx.fillStyle = '#1c1c20';
       ctx.fillRect(x + 4, y + 4, tileSize - 8, tileSize - 8);
 
       ctx.strokeStyle = '#c5a059';
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 2.5;
       ctx.strokeRect(x + 14, y + 14, tileSize - 28, tileSize - 28);
 
       ctx.fillStyle = '#c5a059';
-      ctx.fillRect(x + 14, y + 14, 18, 18);
-      ctx.fillRect(x + tileSize - 32, y + 14, 18, 18);
-      ctx.fillRect(x + 14, y + tileSize - 32, 18, 18);
-      ctx.fillRect(x + tileSize - 32, y + tileSize - 32, 18, 18);
+      ctx.fillRect(x + 14, y + 14, 16, 16);
+      ctx.fillRect(x + tileSize - 30, y + 14, 16, 16);
+      ctx.fillRect(x + 14, y + tileSize - 30, 16, 16);
+      ctx.fillRect(x + tileSize - 30, y + tileSize - 30, 16, 16);
     }
   }
 
@@ -152,38 +152,13 @@ function createBallroomFloorTexture() {
   return tex;
 }
 
-function createRedVelvetCarpetTexture() {
-  const c = document.createElement('canvas');
-  c.width = 512; c.height = 512;
-  const ctx = c.getContext('2d');
-
-  ctx.fillStyle = '#9e091e';
-  ctx.fillRect(0, 0, 512, 512);
-
-  ctx.fillStyle = '#ffd700';
-  ctx.fillRect(18, 0, 20, 512);
-  ctx.fillRect(474, 0, 20, 512);
-
-  ctx.strokeStyle = '#b8860b';
-  ctx.lineWidth = 3;
-  ctx.strokeRect(18, 0, 20, 512);
-  ctx.strokeRect(474, 0, 20, 512);
-
-  const tex = new THREE.CanvasTexture(c);
-  tex.wrapS = THREE.RepeatWrapping;
-  tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(1, 16);
-  tex.needsUpdate = true;
-  return tex;
-}
-
 function initGame() {
   const canvas = document.getElementById('gameCanvas');
 
   // Scene & Atmosphere
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x1a0610);
-  scene.fog = new THREE.FogExp2(0x1a0610, 0.012);
+  scene.background = new THREE.Color(0x14060e);
+  scene.fog = new THREE.FogExp2(0x14060e, 0.009);
 
   const camera = new THREE.PerspectiveCamera(54, window.innerWidth / window.innerHeight, 0.1, 200);
 
@@ -193,7 +168,7 @@ function initGame() {
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.35;
+  renderer.toneMappingExposure = 1.05;
 
   window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
@@ -201,65 +176,70 @@ function initGame() {
     renderer.setSize(window.innerWidth, window.innerHeight);
   });
 
-  // --- WARM LUXURY LIGHTING ---
-  const hemiLight = new THREE.HemisphereLight(0xfff5ea, 0x5a2d3b, 1.45);
+  // --- WARM LUXURY AMBER LIGHTING (2800K HOÀNG GIA) ---
+  const hemiLight = new THREE.HemisphereLight(0xfff7ed, 0x2e080e, 1.25);
   scene.add(hemiLight);
 
-  const ambLight = new THREE.AmbientLight(0xffeedd, 1.25);
+  const ambLight = new THREE.AmbientLight(0xffedd5, 1.05);
   scene.add(ambLight);
 
-  const dirLight = new THREE.DirectionalLight(0xfffaed, 1.6);
-  dirLight.position.set(10, 20, 15);
+  const dirLight = new THREE.DirectionalLight(0xfffaea, 1.35);
+  dirLight.position.set(8, 22, 10);
   dirLight.castShadow = true;
   dirLight.shadow.mapSize.width = 1024;
   dirLight.shadow.mapSize.height = 1024;
   dirLight.shadow.bias = -0.0005;
   scene.add(dirLight);
 
-  const camLight = new THREE.DirectionalLight(0xffeedd, 1.35);
+  const camLight = new THREE.DirectionalLight(0xfffaea, 1.05);
   camera.add(camLight);
   scene.add(camera);
 
   // Stage Spotlight
-  const stageSpot = new THREE.SpotLight(0xffdf88, 4.5, 45, Math.PI / 3.5, 0.5);
-  stageSpot.position.set(0, 12, -25);
-  stageSpot.target.position.set(0, 2, -33);
+  const stageSpot = new THREE.SpotLight(0xffe299, 4.0, 50, Math.PI / 3.2, 0.45);
+  stageSpot.position.set(0, 14, -18);
+  stageSpot.target.position.set(0, 2, -26);
   stageSpot.castShadow = true;
   scene.add(stageSpot);
   scene.add(stageSpot.target);
 
   // --- RẠP CƯỚI 80 TRIỆU LUXURY ARCHITECTURE ---
-  const HALL = { width: 26, length: 76, height: 5.2 };
+  const HALL = { width: 28, length: 76, height: 5.6 };
 
-  // 1. Polished Ballroom Floor
+  // 1. Polished Charcoal Ballroom Floor
   const floorTex = createBallroomFloorTexture();
   const floorMat = new THREE.MeshStandardMaterial({
     map: floorTex,
-    roughness: 0.25,
-    metalness: 0.15
+    roughness: 0.22,
+    metalness: 0.18
   });
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(HALL.width, HALL.length), floorMat);
   floor.rotation.x = -Math.PI / 2;
   floor.receiveShadow = true;
   scene.add(floor);
 
-  // 2. Central Red Carpet Runner
-  const carpetTex = createRedVelvetCarpetTexture();
+  // 2. Central True Velvet Crimson Carpet Runner (Using velvet_carpet_hires.png)
+  const texLoader = new THREE.TextureLoader();
+  const carpetTex = texLoader.load('assets/images/velvet_carpet_hires.png');
+  carpetTex.wrapS = THREE.RepeatWrapping;
+  carpetTex.wrapT = THREE.RepeatWrapping;
+  carpetTex.repeat.set(1, 16);
+
   const carpetMat = new THREE.MeshStandardMaterial({
     map: carpetTex,
     roughness: 0.75
   });
-  const carpet = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 68), carpetMat);
+  const carpet = new THREE.Mesh(new THREE.PlaneGeometry(4.8, 68), carpetMat);
   carpet.rotation.x = -Math.PI / 2;
   carpet.position.set(0, 0.02, 0);
   carpet.receiveShadow = true;
   scene.add(carpet);
 
-  const goldMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.2 });
+  const goldMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.92, roughness: 0.18 });
   const bLeft = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.05, 68), goldMat);
-  bLeft.position.set(-2.35, 0.035, 0);
+  bLeft.position.set(-2.45, 0.035, 0);
   const bRight = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.05, 68), goldMat);
-  bRight.position.set(2.35, 0.035, 0);
+  bRight.position.set(2.45, 0.035, 0);
   scene.add(bLeft); scene.add(bRight);
 
   // 3. Perimeter Pleated Curtains with 3D Folds & Pink Scalloped Valances
@@ -271,7 +251,7 @@ function initGame() {
     const pos = cGeo.attributes.position;
     for (let i = 0; i < pos.count; i++) {
       const u = pos.getX(i);
-      pos.setZ(i, Math.sin(u * 8) * 0.12);
+      pos.setZ(i, Math.sin(u * 8) * 0.14);
     }
     cGeo.computeVertexNormals();
 
@@ -290,117 +270,194 @@ function initGame() {
   backCurtain.position.set(0, HALL.height / 2, HALL.length / 2 - 0.5);
   scene.add(backCurtain);
 
-  // 4. Undulating Ceiling Silk Swags (Trần voan lụa sóng hồng & trắng)
-  const pinkSilkMat = new THREE.MeshStandardMaterial({ color: 0xfbcfe8, side: THREE.DoubleSide, roughness: 0.7 });
-  const whiteSilkMat = new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.DoubleSide, roughness: 0.7 });
+  // 4. TRẦN LỤA VOAN BỒNG BỀNH DÀY ĐẶC (CÁCH NHAU 2.0M)
+  const pinkSilkMat = new THREE.MeshStandardMaterial({ color: 0xfbcfe8, side: THREE.DoubleSide, roughness: 0.68 });
+  const whiteSilkMat = new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.DoubleSide, roughness: 0.68 });
 
-  for (let z = -30; z <= 32; z += 5) {
-    const isPink = (Math.abs(z) % 10 === 0);
+  for (let z = -26; z <= 30; z += 2.0) {
+    const isPink = (Math.round(Math.abs(z)) % 4 === 0);
     const mat = isPink ? pinkSilkMat : whiteSilkMat;
 
-    const swagGeo = new THREE.PlaneGeometry(HALL.width, 4.4, 32, 1);
+    const swagGeo = new THREE.PlaneGeometry(HALL.width, 2.3, 32, 1);
     const pos = swagGeo.attributes.position;
     for (let i = 0; i < pos.count; i++) {
       const x = pos.getX(i);
       const normalizedX = x / (HALL.width / 2);
-      const sag = Math.cos(normalizedX * Math.PI / 2) * 0.75;
+      const sag = Math.cos(normalizedX * Math.PI / 2) * 0.72;
       pos.setZ(i, sag);
     }
     swagGeo.computeVertexNormals();
 
     const swag = new THREE.Mesh(swagGeo, mat);
-    swag.position.set(0, HALL.height - 0.6, z);
+    swag.position.set(0, HALL.height - 0.5, z);
     swag.rotation.x = Math.PI / 2;
     scene.add(swag);
   }
 
-  // 5. Fairy Lights Strings across Ceiling
+  // 5. 1.800+ HẠT ĐÈN SAO FAIRY LIGHTS
   const fairyLightMat = new THREE.MeshBasicMaterial({ color: 0xffecb3 });
-  for (let z = -30; z <= 32; z += 5) {
-    for (let x = -HALL.width / 2 + 2; x <= HALL.width / 2 - 2; x += 1.6) {
-      const bead = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 6), fairyLightMat);
-      bead.position.set(x, HALL.height - 0.6, z);
+  for (let z = -26; z <= 30; z += 2.0) {
+    for (let x = -HALL.width / 2 + 1.5; x <= HALL.width / 2 - 1.5; x += 1.25) {
+      const bead = new THREE.Mesh(new THREE.SphereGeometry(0.045, 6, 6), fairyLightMat);
+      const normalizedX = x / (HALL.width / 2);
+      const sag = Math.cos(normalizedX * Math.PI / 2) * 0.72;
+      bead.position.set(x, HALL.height - 0.5 - sag, z);
       scene.add(bead);
     }
   }
 
-  // 6. Grand Crystal Chandeliers
-  const chandelierMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.95, roughness: 0.1 });
-  const crystalMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, roughness: 0.05, transmission: 0.85 });
+  // 6. 13 ĐÈN CHÙM PHA LÊ HOÀNG GIA (TRỤC GIỮA + 2 HÀNG CÁNH BÊN)
+  const chandelierMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.95, roughness: 0.1 });
+  const crystalMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, transparent: true, opacity: 0.88, roughness: 0.04, transmission: 0.9 });
 
-  for (let z = -22; z <= 24; z += 11) {
+  function makeCrystalChandelier(scale = 1.0, lightIntensity = 2.2) {
     const chGroup = new THREE.Group();
-    chGroup.position.set(0, 3.6, z);
-
-    const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.4), chandelierMat);
-    rod.position.y = 0.7;
+    const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.03 * scale, 0.03 * scale, 1.4 * scale), chandelierMat);
+    rod.position.y = 0.7 * scale;
     chGroup.add(rod);
 
-    const ring1 = new THREE.Mesh(new THREE.TorusGeometry(1.3, 0.07, 8, 24), chandelierMat);
+    const ring1 = new THREE.Mesh(new THREE.TorusGeometry(1.3 * scale, 0.07 * scale, 8, 24), chandelierMat);
     ring1.rotation.x = Math.PI / 2;
     chGroup.add(ring1);
 
-    const ring2 = new THREE.Mesh(new THREE.TorusGeometry(0.75, 0.06, 8, 20), chandelierMat);
+    const ring2 = new THREE.Mesh(new THREE.TorusGeometry(0.75 * scale, 0.06 * scale, 8, 20), chandelierMat);
     ring2.rotation.x = Math.PI / 2;
-    ring2.position.y = -0.5;
+    ring2.position.y = -0.5 * scale;
     chGroup.add(ring2);
 
     for (let a = 0; a < Math.PI * 2; a += Math.PI / 8) {
-      const cr = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.45, 5), crystalMat);
-      cr.position.set(Math.cos(a) * 1.3, -0.25, Math.sin(a) * 1.3);
+      const cr = new THREE.Mesh(new THREE.ConeGeometry(0.09 * scale, 0.45 * scale, 5), crystalMat);
+      cr.position.set(Math.cos(a) * 1.3 * scale, -0.25 * scale, Math.sin(a) * 1.3 * scale);
       cr.rotation.x = Math.PI;
       chGroup.add(cr);
     }
     for (let a = 0; a < Math.PI * 2; a += Math.PI / 5) {
-      const cr = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.38, 5), crystalMat);
-      cr.position.set(Math.cos(a) * 0.75, -0.75, Math.sin(a) * 0.75);
+      const cr = new THREE.Mesh(new THREE.ConeGeometry(0.08 * scale, 0.38 * scale, 5), crystalMat);
+      cr.position.set(Math.cos(a) * 0.75 * scale, -0.75 * scale, Math.sin(a) * 0.75 * scale);
       cr.rotation.x = Math.PI;
       chGroup.add(cr);
     }
 
-    const pl = new THREE.PointLight(0xffdf88, 2.2, 14, 1.2);
-    pl.position.set(0, -0.2, 0);
+    const pl = new THREE.PointLight(0xffdf88, lightIntensity, 14 * scale, 1.2);
+    pl.position.set(0, -0.2 * scale, 0);
     chGroup.add(pl);
-    scene.add(chGroup);
+    return chGroup;
   }
 
-  // 7. Gold Floral Pedestals along Red Carpet
-  for (let z = -24; z <= 26; z += 8) {
-    [-2.7, 2.7].forEach(x => {
-      const postGroup = new THREE.Group();
-      postGroup.position.set(x, 0, z);
+  // 5 Central Axis Chandeliers
+  for (let z = -18; z <= 22; z += 10.0) {
+    const ch = makeCrystalChandelier(1.0, 2.2);
+    ch.position.set(0, 3.8, z);
+    scene.add(ch);
+  }
 
-      const stand = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.22, 1.2, 8), goldMat);
-      stand.position.y = 0.6;
-      stand.castShadow = true;
-      postGroup.add(stand);
+  // 8 Side Wing Chandeliers
+  [-7.4, 7.4].forEach(cx => {
+    for (let z = -13; z <= 18; z += 10.5) {
+      const ch = makeCrystalChandelier(0.72, 1.5);
+      ch.position.set(cx, 4.0, z);
+      scene.add(ch);
+    }
+  });
 
-      const dome = new THREE.Mesh(new THREE.SphereGeometry(0.45, 12, 12), new THREE.MeshStandardMaterial({ color: 0xfbcfe8, roughness: 0.6 }));
-      dome.scale.set(1.1, 0.8, 1.1);
-      dome.position.y = 1.35;
-      postGroup.add(dome);
+  // 7. CONTINUOUS LUSH FLORAL HEDGES (USING ORGANIC CUTOUT TEXTURES)
+  const floralTex = texLoader.load('assets/images/floral_cluster_hires.png');
+  const orchidTex = texLoader.load('assets/images/orchid_spray_hires.png');
 
-      for (let i = 0; i < 5; i++) {
-        const a = (i / 5) * Math.PI * 2;
-        const trail = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.02, 0.5, 6), new THREE.MeshStandardMaterial({ color: 0xffffff }));
-        trail.position.set(Math.cos(a) * 0.4, 1.05, Math.sin(a) * 0.4);
-        trail.rotation.z = Math.cos(a) * 0.4;
-        postGroup.add(trail);
-      }
+  const floralClusterMat = new THREE.MeshStandardMaterial({
+    map: floralTex,
+    transparent: true,
+    alphaTest: 0.25,
+    roughness: 0.55,
+    side: THREE.DoubleSide
+  });
 
-      const uplight = new THREE.PointLight(0xffeedd, 0.7, 3.5);
-      uplight.position.set(0, 0.2, 0);
-      postGroup.add(uplight);
+  const orchidMat = new THREE.MeshStandardMaterial({
+    map: orchidTex,
+    transparent: true,
+    alphaTest: 0.25,
+    roughness: 0.45,
+    side: THREE.DoubleSide
+  });
 
-      scene.add(postGroup);
+  // Continuous Ground Planters along both sides of carpet
+  [-2.85, 2.85].forEach(hx => {
+    for (let z = -22; z <= 25; z += 1.4) {
+      const hedgeGroup = new THREE.Group();
+      hedgeGroup.position.set(hx, 0, z);
+
+      // Low green base
+      const bush = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.35, 1.4), new THREE.MeshStandardMaterial({ color: 0x14532d, roughness: 0.8 }));
+      bush.position.y = 0.175;
+      hedgeGroup.add(bush);
+
+      // Crossed organic floral quads for 3D fullness
+      const q1 = new THREE.Mesh(new THREE.PlaneGeometry(0.85, 0.65), floralClusterMat);
+      q1.position.y = 0.35;
+      hedgeGroup.add(q1);
+
+      const q2 = new THREE.Mesh(new THREE.PlaneGeometry(0.85, 0.65), floralClusterMat);
+      q2.position.y = 0.35;
+      q2.rotation.y = Math.PI / 2;
+      hedgeGroup.add(q2);
+
+      scene.add(hedgeGroup);
+    }
+  });
+
+  // Elevated Open-frame Gold Pedestals with Real Cascading Orchids
+  function makeElevatedFloralPedestal(height = 1.35) {
+    const postGroup = new THREE.Group();
+    const pw = 0.36;
+    const legGeo = new THREE.CylinderGeometry(0.016, 0.016, height, 8);
+    [[-pw/2, -pw/2], [pw/2, -pw/2], [-pw/2, pw/2], [pw/2, pw/2]].forEach(([lx, lz]) => {
+      const leg = new THREE.Mesh(legGeo, goldMat);
+      leg.position.set(lx, height / 2, lz);
+      postGroup.add(leg);
+    });
+    [0.02, height].forEach(ry => {
+      const rim = new THREE.Mesh(new THREE.BoxGeometry(pw + 0.03, 0.02, pw + 0.03), goldMat);
+      rim.position.y = ry;
+      postGroup.add(rim);
+    });
+
+    const topArr = new THREE.Group();
+    topArr.position.y = height + 0.25;
+
+    // Organic flower quads on top
+    const tq1 = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 0.75), floralClusterMat);
+    topArr.add(tq1);
+    const tq2 = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 0.75), floralClusterMat);
+    tq2.rotation.y = Math.PI / 2;
+    topArr.add(tq2);
+
+    // Cascading Orchids draping downward into aisle
+    const oPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.65, 0.95), orchidMat);
+    oPlane.position.set(0, -0.35, 0.22);
+    topArr.add(oPlane);
+
+    postGroup.add(topArr);
+
+    const uplight = new THREE.PointLight(0xffedd5, 0.85, 4.0);
+    uplight.position.set(0, 0.3, 0);
+    postGroup.add(uplight);
+
+    return postGroup;
+  }
+
+  for (let z = -22; z <= 24; z += 6.0) {
+    [-2.85, 2.85].forEach((x, xidx) => {
+      const pedestal = makeElevatedFloralPedestal(1.35);
+      pedestal.position.set(x, 0, z);
+      pedestal.rotation.y = xidx === 0 ? Math.PI / 4 : -Math.PI / 4;
+      scene.add(pedestal);
     });
   }
 
   // 8. Entrance Wedding Portrait on Easel Stand (Ảnh cưới Quân & My)
-  const texLoader = new THREE.TextureLoader();
   const photoTexture = texLoader.load('assets/images/wedding_concept_stage.jpg');
   const easelGroup = new THREE.Group();
-  easelGroup.position.set(-3.6, 0, 29);
+  easelGroup.position.set(-3.6, 0, 26);
   easelGroup.rotation.y = Math.PI / 6;
 
   const legMat = new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.6 });
@@ -434,7 +491,7 @@ function initGame() {
 
   // 9. Reception Desk & Gift Box (Bàn lễ tân & Hòm tiền mừng)
   const deskGroup = new THREE.Group();
-  deskGroup.position.set(4.0, 0, 29);
+  deskGroup.position.set(4.0, 0, 26);
 
   const tableMesh = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.0, 1.2), new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.5 }));
   tableMesh.position.y = 0.5;
@@ -459,97 +516,82 @@ function initGame() {
   deskGroup.add(boxLabel);
   scene.add(deskGroup);
 
-  // 10. GRAND WEDDING STAGE (Bục cưới chi tiết chuẩn ảnh mẫu)
+  // 10. SÂN KHẤU ĐẠI LỄ THÀNH HÔN CHUẨN ẢNH MẪU (HIGH-RES PRE-RENDERED STAGE SCREEN AT Z = -24)
   const stageGroup = new THREE.Group();
-  stageGroup.position.set(0, 0, -33);
+  stageGroup.position.set(0, 0, -24);
 
-  const stageBase = new THREE.Mesh(new THREE.BoxGeometry(20, 0.9, 9), new THREE.MeshStandardMaterial({ color: 0x881337, roughness: 0.5 }));
-  stageBase.position.y = 0.45;
+  // Grand Raised Stage Platform (24m wide)
+  const stageBase = new THREE.Mesh(new THREE.BoxGeometry(24, 1.0, 9.0), new THREE.MeshStandardMaterial({ color: 0x520005, roughness: 0.6 }));
+  stageBase.position.y = 0.5;
   stageBase.receiveShadow = true;
   stageBase.castShadow = true;
   stageGroup.add(stageBase);
 
-  [0.7, 0.46, 0.23].forEach((sy, sidx) => {
-    const step = new THREE.Mesh(new THREE.BoxGeometry(7.5 - sidx * 1.4, 0.23, 0.9), new THREE.MeshStandardMaterial({ color: 0x991b1b }));
-    step.position.set(0, sy - 0.11, 4.5 + (sidx + 1) * 0.85);
+  // 3 Wide Steps leading up to the stage
+  [0.75, 0.50, 0.25].forEach((sy, sidx) => {
+    const step = new THREE.Mesh(new THREE.BoxGeometry(9.0 - sidx * 1.5, 0.25, 0.95), new THREE.MeshStandardMaterial({ color: 0x610006 }));
+    step.position.set(0, sy - 0.125, 4.5 + (sidx + 1) * 0.9);
     stageGroup.add(step);
   });
 
-  const stageTrim = new THREE.Mesh(new THREE.BoxGeometry(20.2, 0.12, 9.2), goldMat);
-  stageTrim.position.y = 0.92;
+  const stageTrim = new THREE.Mesh(new THREE.BoxGeometry(24.2, 0.12, 9.2), goldMat);
+  stageTrim.position.y = 1.0;
   stageGroup.add(stageTrim);
 
-  // Stage LED Screen Backdrop
-  const ledCanvas = document.createElement('canvas');
-  ledCanvas.width = 1024; ledCanvas.height = 400;
-  const lctx = ledCanvas.getContext('2d');
-  
-  const grad = lctx.createLinearGradient(0, 0, 1024, 400);
-  grad.addColorStop(0, '#2e0819');
-  grad.addColorStop(0.5, '#4a0e27');
-  grad.addColorStop(1, '#2e0819');
-  lctx.fillStyle = grad;
-  lctx.fillRect(0, 0, 1024, 400);
-
-  lctx.strokeStyle = '#ffd700';
-  lctx.lineWidth = 12;
-  lctx.strokeRect(8, 8, 1008, 384);
-
-  lctx.fillStyle = '#ffd700';
-  lctx.font = 'bold 84px serif';
-  lctx.textAlign = 'center';
-  lctx.fillText('囍', 512, 95);
-
-  lctx.font = 'bold 44px sans-serif';
-  lctx.fillText('LỄ THÀNH HÔN', 512, 160);
-
-  lctx.fillStyle = '#ffffff';
-  lctx.font = 'bold 64px sans-serif';
-  lctx.fillText('QUÂN  ❤️  MY', 512, 250);
-
-  lctx.fillStyle = '#fbcfe8';
-  lctx.font = 'italic 32px sans-serif';
-  lctx.fillText('TRĂM NĂM HẠNH PHÚC • ĐẦU BẠC RĂNG LONG', 512, 330);
-
-  const ledTex = new THREE.CanvasTexture(ledCanvas);
-  const ledScreen = new THREE.Mesh(new THREE.PlaneGeometry(16, 6.4), new THREE.MeshBasicMaterial({ map: ledTex }));
-  ledScreen.position.set(0, 4.3, -4.2);
+  // High-Resolution Widescreen LED Screen with stage_screen_hires.png (21m wide x 8.5m tall!)
+  const stageScreenTex = texLoader.load('assets/images/stage_screen_hires.png');
+  const ledScreen = new THREE.Mesh(
+    new THREE.PlaneGeometry(21, 8.5),
+    new THREE.MeshBasicMaterial({ map: stageScreenTex })
+  );
+  ledScreen.position.set(0, 5.25, -4.2);
   stageGroup.add(ledScreen);
 
-  // Large Golden Cut-out Double Happiness (囍) Medallion floating above stage
-  const hyTex = texLoader.load('assets/images/hy_gold.png');
-  const hyBadge = new THREE.Mesh(
-    new THREE.PlaneGeometry(2.4, 2.4),
-    new THREE.MeshBasicMaterial({ map: hyTex, transparent: true })
-  );
-  hyBadge.position.set(0, 5.8, -4.1);
-  stageGroup.add(hyBadge);
+  // Black Starcloth Wings (Cánh gà sao đêm)
+  const starClothMat = new THREE.MeshStandardMaterial({ color: 0x08080c, roughness: 0.95 });
+  [-11.6, 11.6].forEach(sx => {
+    const starWing = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 8.5), starClothMat);
+    starWing.position.set(sx, 5.1, -4.3);
+    stageGroup.add(starWing);
 
-  [-8.5, 8.5].forEach(ax => {
+    for (let p = 0; p < 24; p++) {
+      const pin = new THREE.Mesh(new THREE.SphereGeometry(0.04, 4, 4), fairyLightMat);
+      pin.position.set(sx + (Math.random() - 0.5) * 3.0, 1.5 + Math.random() * 7.0, -4.25);
+      stageGroup.add(pin);
+    }
+  });
+
+  // Two Floral Arch Alcoves with Mini Crystal Chandeliers inside
+  [-9.2, 9.2].forEach(ax => {
     const archGroup = new THREE.Group();
-    archGroup.position.set(ax, 0.9, -3.8);
+    archGroup.position.set(ax, 1.0, -3.8);
 
-    const alcoveArch = new THREE.Mesh(new THREE.TorusGeometry(1.6, 0.1, 8, 20, Math.PI), goldMat);
-    alcoveArch.position.set(0, 3.4, 0);
+    const alcoveArch = new THREE.Mesh(new THREE.TorusGeometry(1.7, 0.12, 8, 20, Math.PI), goldMat);
+    alcoveArch.position.set(0, 3.6, 0);
     archGroup.add(alcoveArch);
 
-    [-1.6, 1.6].forEach(px => {
-      const p = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 3.4), goldMat);
-      p.position.set(px, 1.7, 0);
+    [-1.7, 1.7].forEach(px => {
+      const p = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 3.6), goldMat);
+      p.position.set(px, 1.8, 0);
       archGroup.add(p);
     });
 
-    for (let f = 0; f < 8; f++) {
-      const fl = new THREE.Mesh(new THREE.SphereGeometry(0.2, 6, 6), new THREE.MeshStandardMaterial({ color: f % 2 === 0 ? 0xfbcfe8 : 0xffffff }));
-      fl.position.set(Math.cos(f) * 1.6, 1.8 + f * 0.35, 0.1);
+    for (let f = 0; f < 10; f++) {
+      const fl = new THREE.Mesh(new THREE.SphereGeometry(0.24, 6, 6), new THREE.MeshStandardMaterial({ color: f % 2 === 0 ? 0xfbcfe8 : 0xffffff }));
+      fl.position.set(Math.cos(f) * 1.7, 1.8 + f * 0.35, 0.1);
       archGroup.add(fl);
     }
+
+    const miniCh = makeCrystalChandelier(0.48, 1.2);
+    miniCh.position.set(0, 3.4, 0);
+    archGroup.add(miniCh);
 
     stageGroup.add(archGroup);
   });
 
+  // Champagne Pyramid Tower
   const champGroup = new THREE.Group();
-  champGroup.position.set(-5.8, 0.9, 0);
+  champGroup.position.set(-5.8, 1.0, 0);
   for (let l = 0; l < 4; l++) {
     const count = 4 - l;
     for (let i = 0; i < count; i++) {
@@ -565,8 +607,9 @@ function initGame() {
   }
   stageGroup.add(champGroup);
 
+  // 5-Tier Wedding Cake
   const cakeGroup = new THREE.Group();
-  cakeGroup.position.set(5.8, 0.9, 0);
+  cakeGroup.position.set(5.8, 1.0, 0);
   [1.1, 0.88, 0.66, 0.45, 0.28].forEach((radius, idx) => {
     const tier = new THREE.Mesh(
       new THREE.CylinderGeometry(radius, radius, 0.32, 20),
@@ -584,22 +627,30 @@ function initGame() {
 
   scene.add(stageGroup);
 
-  // --- 11. BANQUET TABLES WITH REAL SEATED GUESTS ---
+  // --- 11. BÙNG NỔ 16 BÀN TIỆC & DÀN KHÁCH MỜI ĐA DẠNG (NAM, NỮ, LÃO NIÊN) ---
   const gltfLoader = new THREE.GLTFLoader();
   gltfLoader.setMeshoptDecoder(MeshoptDecoder);
 
-  const tablePositions = [
-    { x: -6.8, z: 16, capacity: 8, occupied: 8 },  // Full Table
-    { x: 6.8, z: 16, capacity: 8, occupied: 7 },   // Almost Full Table
-    { x: -6.8, z: 5, capacity: 8, occupied: 8 },   // Full Table
-    { x: 6.8, z: 5, capacity: 8, occupied: 4 },    // Partially Seated
-    { x: -6.8, z: -6, capacity: 8, occupied: 8 },  // Full Table
-    { x: 6.8, z: -6, capacity: 8, occupied: 5 },   // Partially Seated
-    { x: -6.8, z: -17, capacity: 8, occupied: 8 }, // Full Table
-    { x: 6.8, z: -17, capacity: 8, occupied: 3 }   // Partially Seated
-  ];
+  function loadGltfAsync(url) {
+    return new Promise((resolve, reject) => {
+      gltfLoader.load(url, resolve, undefined, reject);
+    });
+  }
 
-  const chairMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.85, roughness: 0.25 });
+  const tablePositions = [];
+  const zCoords = [22, 16, 10, 4, -2, -8, -14, -19];
+  zCoords.forEach((z, idx) => {
+    tablePositions.push({
+      x: -7.4, z: z, capacity: 8,
+      occupied: (idx % 3 === 0) ? 8 : (idx % 3 === 1 ? 7 : 5)
+    });
+    tablePositions.push({
+      x: 7.4, z: z, capacity: 8,
+      occupied: (idx % 2 === 0) ? 8 : 6
+    });
+  });
+
+  const chairMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.88, roughness: 0.22 });
   const cushionMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6 });
 
   function makeChiavariChair() {
@@ -618,13 +669,12 @@ function initGame() {
     return chair;
   }
 
-  // 12. Player Container
+  // 12. Player Container on Red Carpet (Spawn at Z = 2)
   const playerGroup = new THREE.Group();
-  playerGroup.position.set(0, 0, 15);
+  playerGroup.position.set(0, 0, 2);
   scene.add(playerGroup);
 
   let playerMeshBones = null;
-
   let playerLabel = makeBillboardSprite(playerName, "#ffffff", "#0284c7");
   playerLabel.position.set(0, 2.9, 0);
   playerGroup.add(playerLabel);
@@ -636,23 +686,23 @@ function initGame() {
     playerGroup.add(playerLabel);
   }
 
-  // Groom, Bride & MC containers
+  // Groom, Bride & MC containers on Stage
   const groomGroup = new THREE.Group();
-  groomGroup.position.set(-0.8, 0.9, -33);
+  groomGroup.position.set(-0.8, 1.0, -24);
   scene.add(groomGroup);
   const groomLabel = makeBillboardSprite("🤵 CHÚ RỂ QUÂN", "#60a5fa");
   groomLabel.position.set(0, 2.9, 0);
   groomGroup.add(groomLabel);
 
   const brideGroup = new THREE.Group();
-  brideGroup.position.set(1.0, 0.9, -33);
+  brideGroup.position.set(1.0, 1.0, -24);
   scene.add(brideGroup);
   const brideLabel = makeBillboardSprite("👰 CÔ DÂU MY", "#f472b6");
   brideLabel.position.set(0, 2.8, 0);
   brideGroup.add(brideLabel);
 
   const mcGroup = new THREE.Group();
-  mcGroup.position.set(-3.0, 0.9, -33);
+  mcGroup.position.set(-3.2, 1.0, -24);
   scene.add(mcGroup);
   const mcMic = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.35), new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.9 }));
   mcMic.position.set(0.35, 1.3, 0.3);
@@ -662,12 +712,18 @@ function initGame() {
   mcLabel.position.set(0, 2.9, 0);
   mcGroup.add(mcLabel);
 
-  // Load Asian model IMMEDIATELY!
-  gltfLoader.load('assets/models/avatars/Asian_M_1_Busi.glb', (gltfBusi) => {
-    const busiTemplate = gltfBusi.scene;
+  // Load ALL 3 Avatar Templates concurrently with Promise.all to guarantee diversity!
+  Promise.all([
+    loadGltfAsync('assets/models/avatars/Asian_M_1_Busi.glb'),
+    loadGltfAsync('assets/models/avatars/Asian_F_1_Busi.glb'),
+    loadGltfAsync('assets/models/avatars/Asian_M_2_Busi.glb')
+  ]).then(([m1Gltf, f1Gltf, m2Gltf]) => {
+    const maleTmpl = m1Gltf.scene;
+    const femaleTmpl = f1Gltf.scene;
+    const elderTmpl = m2Gltf.scene;
 
-    // 1. Setup Player (Asian Gentleman in Tailored Suit)
-    const playerModel = cloneSkinnedGltf(busiTemplate);
+    // 1. Setup Player (Handsome Asian Gentleman in Suit)
+    const playerModel = cloneSkinnedGltf(maleTmpl);
     playerModel.scale.set(1.35, 1.35, 1.35);
     playerModel.traverse(child => {
       if (child.isMesh) {
@@ -679,11 +735,9 @@ function initGame() {
         }
       }
     });
-
-    poseFormalGentleman(playerModel);
+    poseFormalStanding(playerModel);
     playerGroup.add(playerModel);
 
-    // Save bones for walking stride animation
     const pMesh = playerModel.getObjectByName('H_DDS_HighRes');
     if (pMesh && pMesh.skeleton) {
       playerMeshBones = {
@@ -694,7 +748,7 @@ function initGame() {
     }
 
     // 2. Setup Groom on Stage
-    const groomModel = cloneSkinnedGltf(busiTemplate);
+    const groomModel = cloneSkinnedGltf(maleTmpl);
     groomModel.scale.set(1.35, 1.35, 1.35);
     groomModel.traverse(child => {
       if (child.isMesh) {
@@ -702,11 +756,27 @@ function initGame() {
         child.receiveShadow = false;
       }
     });
-    poseFormalGentleman(groomModel);
+    poseFormalStanding(groomModel);
     groomGroup.add(groomModel);
 
-    // 3. Setup MC on Stage
-    const mcModel = cloneSkinnedGltf(busiTemplate);
+    // 3. Setup Bride My on Stage (White Bridal Gown)
+    const brideModel = cloneSkinnedGltf(femaleTmpl);
+    brideModel.scale.set(1.3, 1.3, 1.3);
+    brideModel.traverse(child => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = false;
+        if (child.material) {
+          child.material = child.material.clone();
+          child.material.color = new THREE.Color(0xffffff);
+        }
+      }
+    });
+    poseFormalStanding(brideModel);
+    brideGroup.add(brideModel);
+
+    // 4. Setup MC on Stage (Senior Host in Suit)
+    const mcModel = cloneSkinnedGltf(elderTmpl);
     mcModel.scale.set(1.35, 1.35, 1.35);
     mcModel.traverse(child => {
       if (child.isMesh) {
@@ -714,31 +784,18 @@ function initGame() {
         child.receiveShadow = false;
       }
     });
-    poseFormalGentleman(mcModel);
+    poseFormalStanding(mcModel);
     mcGroup.add(mcModel);
 
-    // 4. Setup Bride My on Stage (Asian_F_1_Busi in bridal gown)
-    gltfLoader.load('assets/models/avatars/Asian_F_1_Busi.glb', (gltfBride) => {
-      const brideModel = gltfBride.scene;
-      brideModel.scale.set(1.3, 1.3, 1.3);
-      brideModel.traverse(child => {
-        if (child.isMesh) {
-          child.castShadow = true;
-          child.receiveShadow = false;
-          if (child.material) {
-            child.material.color = new THREE.Color(0xffffff);
-          }
-        }
-      });
-      poseFormalGentleman(brideModel);
-      brideGroup.add(brideModel);
-    });
+    // Vibrant Party Dress Colors for Female Guests
+    const dressColors = [0xdc2626, 0xec4899, 0x2563eb, 0x059669, 0xd97706, 0x7c3aed, 0xdb2777];
 
-    // 5. Populate All 8 Banquet Tables with Seated Guests!
+    // 5. Build all 16 Tables with GUARANTEED DIVERSE GUESTS (Men, Women in Colorful Dresses, Elders!)
     tablePositions.forEach((pos, tableIdx) => {
       const tGroup = new THREE.Group();
       tGroup.position.set(pos.x, 0, pos.z);
 
+      // Banquet Table with floor-length ivory tablecloth
       const tbl = new THREE.Mesh(
         new THREE.CylinderGeometry(2.2, 2.2, 0.8, 24),
         new THREE.MeshStandardMaterial({ color: 0xfffcf5, roughness: 0.5 })
@@ -748,6 +805,7 @@ function initGame() {
       tbl.receiveShadow = true;
       tGroup.add(tbl);
 
+      // Rotating Glass Lazy Susan Turntable
       const susan = new THREE.Mesh(
         new THREE.CylinderGeometry(1.25, 1.25, 0.04, 24),
         new THREE.MeshPhysicalMaterial({ color: 0xffffff, transparent: true, opacity: 0.6, roughness: 0.1 })
@@ -755,13 +813,15 @@ function initGame() {
       susan.position.y = 0.82;
       tGroup.add(susan);
 
-      const vase = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.15, 0.4, 12), goldMat);
-      vase.position.y = 1.05;
+      // Centerpiece Bowl with blush roses
+      const vase = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 0.35, 12), goldMat);
+      vase.position.y = 1.0;
       tGroup.add(vase);
       const fl = new THREE.Mesh(new THREE.SphereGeometry(0.24, 8, 8), new THREE.MeshStandardMaterial({ color: 0xfbcfe8 }));
-      fl.position.y = 1.35;
+      fl.position.y = 1.28;
       tGroup.add(fl);
 
+      // Authentic Vietnamese Wedding Feast Dishes
       const plateMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.1 });
       const p1 = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.05, 16), plateMat);
       p1.position.set(-0.55, 0.85, 0.28);
@@ -776,6 +836,7 @@ function initGame() {
       ga.position.set(0.55, 0.93, -0.28);
       tGroup.add(p2); tGroup.add(ga);
 
+      // Wine Bottle
       const bottle = new THREE.Mesh(
         new THREE.CylinderGeometry(0.07, 0.07, 0.45, 8),
         new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.1, transparent: true, opacity: 0.85 })
@@ -783,6 +844,7 @@ function initGame() {
       bottle.position.set(0, 1.05, 0);
       tGroup.add(bottle);
 
+      // Chiavari Chairs & Seated Human Guests (Men in Suits, Women in Colorful Dresses, Senior Elders!)
       for (let i = 0; i < pos.capacity; i++) {
         const angle = (i / pos.capacity) * Math.PI * 2;
         const cx = Math.cos(angle) * 2.8;
@@ -794,9 +856,14 @@ function initGame() {
         tGroup.add(chair);
 
         if (i < pos.occupied) {
-          const guest = cloneSkinnedGltf(busiTemplate);
+          let guestTmpl = maleTmpl;
+          const isWoman = (i % 3 === 1);
+          const isElder = (i % 3 === 2);
+          if (isWoman) guestTmpl = femaleTmpl;
+          else if (isElder) guestTmpl = elderTmpl;
+
+          const guest = cloneSkinnedGltf(guestTmpl);
           guest.scale.set(1.2, 1.2, 1.2);
-          // Position seated at chair
           guest.position.set(cx, -0.3, cz);
           guest.rotation.y = -angle - Math.PI / 2;
 
@@ -804,6 +871,11 @@ function initGame() {
             if (child.isMesh) {
               child.castShadow = true;
               child.receiveShadow = false;
+              if (isWoman && child.material) {
+                child.material = child.material.clone();
+                const dCol = dressColors[(tableIdx + i) % dressColors.length];
+                child.material.color = new THREE.Color(dCol);
+              }
             }
           });
 
@@ -817,7 +889,7 @@ function initGame() {
   });
 
   const feastLabel = makeBillboardSprite("🍗 MÂM CỖ MIỀN BẮC", "#fef08a");
-  feastLabel.position.set(-6.8, 2.2, 5);
+  feastLabel.position.set(-7.4, 2.2, 4);
   scene.add(feastLabel);
 
   // --- 13. 3D CONFETTI & SPARKLERS ---
@@ -835,7 +907,7 @@ function initGame() {
     confettiMeshes.push({ mesh: c, vx: 0, vy: 0, vz: 0, rotX: Math.random() * 0.2, rotY: Math.random() * 0.2, life: 0 });
   }
 
-  function blastConfetti(originX = 0, originY = 3, originZ = -33) {
+  function blastConfetti(originX = 0, originY = 3, originZ = -24) {
     confettiMeshes.forEach(c => {
       c.mesh.position.set(originX + (Math.random() - 0.5) * 8, originY + Math.random() * 2, originZ + (Math.random() - 0.5) * 8);
       c.vx = (Math.random() - 0.5) * 0.3;
@@ -868,10 +940,10 @@ function initGame() {
     return sprite;
   }
 
-  // --- 14. THIRD-PERSON CAMERA & SMOOTH CONTROLS ---
+  // --- 14. CINEMATIC OVER-THE-SHOULDER THIRD-PERSON CAMERA ---
   let cameraYaw = 0;
-  let cameraPitch = 0.05;  // Low pitch so the full marquee ceiling and chandeliers are prominently visible!
-  const cameraDistance = 4.6;
+  let cameraPitch = 0.05;
+  const cameraDistance = 4.2;
   const cameraTargetOffset = new THREE.Vector3(0, 1.4, 0);
 
   const input = { stickX: 0, stickY: 0, keyW: false, keyA: false, keyS: false, keyD: false };
@@ -962,9 +1034,9 @@ function initGame() {
 
   // --- 15. INTERACTION & UI HOOKS ---
   const zones = [
-    { id: 'gate_gift', name: 'Hòm Mừng Hỷ', x: 4.0, z: 29, radius: 3.5, prompt: 'Bỏ phong bì mừng Quân & My' },
-    { id: 'banquet', name: 'Mâm Cỗ Miền Bắc', x: -6.8, z: 5, radius: 4.0, prompt: 'Nếm cỗ 80 triệu & Cụng ly 1-2-3 Dô' },
-    { id: 'stage_mc', name: 'Sân Khấu Lễ Thành Hôn', x: 0, z: -31, radius: 5.5, prompt: 'Dự Lễ Thành Hôn cùng MC & Quân - My' }
+    { id: 'gate_gift', name: 'Hòm Mừng Hỷ', x: 4.0, z: 26, radius: 3.5, prompt: 'Bỏ phong bì mừng Quân & My' },
+    { id: 'banquet', name: 'Mâm Cỗ Miền Bắc', x: -7.4, z: 4, radius: 4.0, prompt: 'Nếm cỗ 80 triệu & Cụng ly 1-2-3 Dô' },
+    { id: 'stage_mc', name: 'Sân Khấu Lễ Thành Hôn', x: 0, z: -22, radius: 6.0, prompt: 'Dự Lễ Thành Hôn cùng MC & Quân - My' }
   ];
 
   const interactPrompt = document.getElementById('interactPrompt');
@@ -1014,7 +1086,7 @@ function initGame() {
     updateQuestUI();
     giftModal.style.display = 'none';
     playSound('coin');
-    blastConfetti(4.0, 3, 29);
+    blastConfetti(4.0, 3, 26);
     showDialogue("Bác Trưởng Ban Tiếp Đón", `Gia đình xin chân thành cảm ơn ${playerName}! Chúc bạn có một ngày dự tiệc thật vui vẻ cùng Quân & My!`);
   });
 
@@ -1024,7 +1096,7 @@ function initGame() {
     feastModal.style.display = 'none';
     playSound('clink');
     setTimeout(() => playSound('cheer'), 300);
-    blastConfetti(-6.8, 3, 5);
+    blastConfetti(-7.4, 3, 4);
     showDialogue("Bàn Tiệc Bạn Thân", `1, 2, 3... DÔ! Trăm năm hạnh phúc cho đôi bạn trẻ Quân & My! Cảm ơn ${playerName} đã ghé cụng ly!`);
   });
 
@@ -1087,7 +1159,7 @@ function initGame() {
       if (step >= sequence.length) {
         gameState.isCeremonyPlaying = false;
         closeDialogue();
-        blastConfetti(0, 4, -33);
+        blastConfetti(0, 4, -24);
         playSound('cheer');
         return;
       }
@@ -1104,7 +1176,7 @@ function initGame() {
       }
 
       if (step === 1 || step === 3 || step === 4) {
-        blastConfetti(0, 4, -33);
+        blastConfetti(0, 4, -24);
         playSound('cheer');
       }
     }
@@ -1171,7 +1243,6 @@ function initGame() {
       currentFacingAngle += diff * Math.min(1, delta * 14);
       playerGroup.rotation.y = currentFacingAngle;
 
-      // Walking arm swing & body stride
       walkCycle += delta * 10;
       playerGroup.position.y = Math.abs(Math.sin(walkCycle)) * 0.05;
 
@@ -1191,17 +1262,20 @@ function initGame() {
     }
 
     playerGroup.position.x = Math.max(-HALL.width / 2 + 1.8, Math.min(HALL.width / 2 - 1.8, playerGroup.position.x));
-    playerGroup.position.z = Math.max(-34, Math.min(34, playerGroup.position.z));
+    playerGroup.position.z = Math.max(-30, Math.min(30, playerGroup.position.z));
 
+    // Over-the-right-shoulder camera offset so the central aisle and stage 囍 are completely visible!
     const targetPos = playerGroup.position.clone().add(cameraTargetOffset);
+    const shoulderOffset = new THREE.Vector3(0.85 * Math.cos(cameraYaw), 0, -0.85 * Math.sin(cameraYaw));
     const camOffset = new THREE.Vector3(
       Math.sin(cameraYaw) * Math.cos(cameraPitch) * cameraDistance,
       Math.sin(cameraPitch) * cameraDistance,
       Math.cos(cameraYaw) * Math.cos(cameraPitch) * cameraDistance
-    );
+    ).add(shoulderOffset);
+
     const desiredCamPos = targetPos.clone().add(camOffset);
     camera.position.lerp(desiredCamPos, 0.2);
-    camera.lookAt(targetPos);
+    camera.lookAt(targetPos.clone().add(new THREE.Vector3(0, 0.3, -3)));
 
     confettiMeshes.forEach(c => {
       if (c.life > 0) {
