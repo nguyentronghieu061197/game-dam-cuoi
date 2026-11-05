@@ -214,8 +214,8 @@ function initGame() {
   scene.add(stageSpot);
   scene.add(stageSpot.target);
 
-  // Rạp Cưới 80 Triệu Architecture
-  const HALL = { width: 28, length: 76, height: 5.6 };
+  // Rạp Cưới 80 Triệu Architecture (Nâng cao trần & đèn chùm chuẩn Ballroom 5 sao, không che màn hình LED!)
+  const HALL = { width: 28, length: 76, height: 8.6 };
 
   // 1. Floor
   const floorTex = createBallroomFloorTexture();
@@ -266,8 +266,8 @@ function initGame() {
     curtain.rotation.y = idx === 0 ? Math.PI / 2 : -Math.PI / 2;
     scene.add(curtain);
 
-    const valance = new THREE.Mesh(new THREE.PlaneGeometry(HALL.length, 1.1), valanceMat);
-    valance.position.set(wallX, HALL.height - 0.55, 0);
+    const valance = new THREE.Mesh(new THREE.PlaneGeometry(HALL.length, 1.2), valanceMat);
+    valance.position.set(wallX, HALL.height - 0.6, 0);
     valance.rotation.y = idx === 0 ? Math.PI / 2 : -Math.PI / 2;
     scene.add(valance);
   });
@@ -276,11 +276,11 @@ function initGame() {
   backCurtain.position.set(0, HALL.height / 2, HALL.length / 2 - 0.5);
   scene.add(backCurtain);
 
-  // 4. Ceiling Silk Swags
+  // 4. Ceiling Silk Swags (Đẩy cao lên sát đỉnh trần Y = 8.1m, tạo khoảng hở thoáng đãng phía trước sân khấu!)
   const pinkSilkMat = new THREE.MeshStandardMaterial({ color: 0xfbcfe8, side: THREE.DoubleSide, roughness: 0.68 });
   const whiteSilkMat = new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.DoubleSide, roughness: 0.68 });
 
-  for (let z = -26; z <= 28; z += 3.5) {
+  for (let z = -14; z <= 28; z += 4.0) {
     const isPink = (Math.round(Math.abs(z)) % 2 === 0);
     const mat = isPink ? pinkSilkMat : whiteSilkMat;
 
@@ -289,25 +289,25 @@ function initGame() {
     for (let i = 0; i < pos.count; i++) {
       const x = pos.getX(i);
       const normalizedX = x / (HALL.width / 2);
-      const sag = Math.cos(normalizedX * Math.PI / 2) * 0.72;
+      const sag = Math.cos(normalizedX * Math.PI / 2) * 0.45;
       pos.setZ(i, sag);
     }
     swagGeo.computeVertexNormals();
 
     const swag = new THREE.Mesh(swagGeo, mat);
-    swag.position.set(0, HALL.height - 0.5, z);
+    swag.position.set(0, HALL.height - 0.35, z);
     swag.rotation.x = Math.PI / 2;
     scene.add(swag);
   }
 
-  // 5. Fairy Lights Points
+  // 5. Fairy Lights Points (Đèn trần sao lung linh ở độ cao lớn)
   const fairyPointsGeo = new THREE.BufferGeometry();
   const fairyPositions = [];
-  for (let z = -26; z <= 28; z += 1.8) {
-    for (let x = -HALL.width / 2 + 1.5; x <= HALL.width / 2 - 1.5; x += 1.2) {
+  for (let z = -16; z <= 28; z += 2.0) {
+    for (let x = -HALL.width / 2 + 1.5; x <= HALL.width / 2 - 1.5; x += 1.4) {
       const normalizedX = x / (HALL.width / 2);
-      const sag = Math.cos(normalizedX * Math.PI / 2) * 0.72;
-      fairyPositions.push(x, HALL.height - 0.5 - sag, z);
+      const sag = Math.cos(normalizedX * Math.PI / 2) * 0.45;
+      fairyPositions.push(x, HALL.height - 0.35 - sag, z);
     }
   }
   fairyPointsGeo.setAttribute('position', new THREE.Float32BufferAttribute(fairyPositions, 3));
@@ -315,7 +315,7 @@ function initGame() {
   const fairyPoints = new THREE.Points(fairyPointsGeo, fairyPointsMat);
   scene.add(fairyPoints);
 
-  // 6. Chandeliers
+  // 6. Chandeliers (Nâng cao lên Y = 6.6m - 7.0m để giải phóng 100% tầm nhìn tới màn hình LED)
   const chandelierMat = new THREE.MeshStandardMaterial({
     color: 0xd4af37, metalness: 0.95, roughness: 0.1,
     emissive: 0x553300, emissiveIntensity: 0.4
@@ -355,16 +355,18 @@ function initGame() {
     return chGroup;
   }
 
-  for (let z = -18; z <= 22; z += 10.0) {
+  // Đèn chùm trung tâm nâng cao lên Y = 6.6m và dừng ở z = -8 để không che sân khấu
+  for (let z = -8; z <= 22; z += 10.0) {
     const ch = makeOptimizedChandelier(1.0);
-    ch.position.set(0, 3.8, z);
+    ch.position.set(0, 6.6, z);
     scene.add(ch);
   }
 
-  [-7.4, 7.4].forEach(cx => {
-    for (let z = -13; z <= 18; z += 10.5) {
-      const ch = makeOptimizedChandelier(0.72);
-      ch.position.set(cx, 4.0, z);
+  // Đèn chùm hai bên sảnh tiệc nâng cao lên Y = 7.0m
+  [-8.2, 8.2].forEach(cx => {
+    for (let z = -12; z <= 20; z += 10.5) {
+      const ch = makeOptimizedChandelier(0.75);
+      ch.position.set(cx, 7.0, z);
       scene.add(ch);
     }
   });
@@ -828,13 +830,21 @@ function initGame() {
     avatarTemplates.female = f1Gltf.scene;
     avatarTemplates.elder = m2Gltf.scene;
 
-    // Load authentic Mixamo mocap animations
-    if (walkGltf && walkGltf.animations) animClips.walk = walkGltf.animations[0];
-    if (clapGltf && clapGltf.animations) animClips.clap = clapGltf.animations[0];
-    if (danceGltf && danceGltf.animations) animClips.dance = danceGltf.animations[0];
-    if (laughGltf && laughGltf.animations) animClips.laugh = laughGltf.animations[0];
-    if (cheerGltf && cheerGltf.animations) animClips.toast = cheerGltf.animations[0];
-    if (drunkGltf && drunkGltf.animations) animClips.stumble = drunkGltf.animations[0];
+    // Chuẩn hóa và làm sạch bộ hoạt ảnh Mixamo Mocap:
+    // Loại bỏ toàn bộ track scale & position để bảo toàn tuyệt đối tỷ lệ xương, tránh biến dạng hay phóng to che màn hình!
+    function sanitizeMixamoClip(clip) {
+      if (!clip || !clip.tracks) return clip;
+      const cleanClip = clip.clone();
+      cleanClip.tracks = cleanClip.tracks.filter(t => t.name.endsWith('.quaternion'));
+      return cleanClip;
+    }
+
+    if (walkGltf && walkGltf.animations) animClips.walk = sanitizeMixamoClip(walkGltf.animations[0]);
+    if (clapGltf && clapGltf.animations) animClips.clap = sanitizeMixamoClip(clapGltf.animations[0]);
+    if (danceGltf && danceGltf.animations) animClips.dance = sanitizeMixamoClip(danceGltf.animations[0]);
+    if (laughGltf && laughGltf.animations) animClips.laugh = sanitizeMixamoClip(laughGltf.animations[0]);
+    if (cheerGltf && cheerGltf.animations) animClips.toast = sanitizeMixamoClip(cheerGltf.animations[0]);
+    if (drunkGltf && drunkGltf.animations) animClips.stumble = sanitizeMixamoClip(drunkGltf.animations[0]);
 
     // 1. Setup Local Player Avatar
     setupPlayerAvatar();
