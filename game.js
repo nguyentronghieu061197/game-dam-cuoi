@@ -3,25 +3,15 @@
  * Facebook Instant Games HTML5 Simulation
  */
 
-// --- 1. FACEBOOK INSTANT GAMES SDK INITIALIZATION ---
+// --- 1. PLAYER & GAME INITIALIZATION ---
 let playerName = "Khách Quý";
-let playerPhoto = "";
 
-window.addEventListener('load', async () => {
-  if (typeof FBInstant !== 'undefined') {
-    try {
-      await FBInstant.initializeAsync();
-      FBInstant.setLoadingProgress(100);
-      await FBInstant.startGameAsync();
-      playerName = FBInstant.player.getName() || "Khách Quý";
-      playerPhoto = FBInstant.player.getPhoto() || "";
-      console.log("FB Instant Games Ready! Player:", playerName);
-    } catch (err) {
-      console.log("Running in offline/local browser mode:", err);
-    }
-  }
+// Start game immediately on load
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initGame);
+} else {
   initGame();
-});
+}
 
 // --- 2. GAME STATE & AUDIO ---
 const gameState = {
@@ -57,6 +47,14 @@ function getAudioContext() {
   }
   return audioCtx;
 }
+
+// Unlock audio on mobile on first touch
+window.addEventListener('pointerdown', () => {
+  getAudioContext();
+  Object.values(audios).forEach(a => {
+    a.load();
+  });
+}, { once: true });
 
 function playSound(type) {
   try {
@@ -219,19 +217,22 @@ function initGame() {
   let touchStartPos = { x: 0, y: 0 };
   const maxDistance = 45;
 
-  joystickZone.addEventListener('touchstart', e => {
-    e.preventDefault();
-    const touch = e.touches[0];
+  // Pointer Events & Touch Virtual Joystick
+  function handlePointerStart(clientX, clientY) {
     const rect = joystickZone.getBoundingClientRect();
     touchStartPos = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
     touchActive = true;
-    updateJoystick(touch.clientX, touch.clientY);
+    updateJoystick(clientX, clientY);
+  }
+
+  joystickZone.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    handlePointerStart(e.clientX, e.clientY);
   });
 
-  window.addEventListener('touchmove', e => {
+  window.addEventListener('pointermove', e => {
     if (!touchActive) return;
-    const touch = e.touches[0];
-    updateJoystick(touch.clientX, touch.clientY);
+    updateJoystick(e.clientX, e.clientY);
   });
 
   const endTouch = () => {
@@ -240,6 +241,8 @@ function initGame() {
     player.vy = 0;
     joystickThumb.style.transform = `translate(0px, 0px)`;
   };
+  window.addEventListener('pointerup', endTouch);
+  window.addEventListener('pointercancel', endTouch);
   window.addEventListener('touchend', endTouch);
   window.addEventListener('touchcancel', endTouch);
 
@@ -268,6 +271,23 @@ function initGame() {
       triggerInteraction(gameState.interactionTarget);
     }
   });
+
+  // Welcome Modal Enter Button
+  const welcomeModal = document.getElementById('welcomeModal');
+  const enterWeddingBtn = document.getElementById('enterWeddingBtn');
+  const playerNameInput = document.getElementById('playerNameInput');
+
+  if (enterWeddingBtn) {
+    enterWeddingBtn.addEventListener('click', () => {
+      if (playerNameInput && playerNameInput.value.trim()) {
+        playerName = playerNameInput.value.trim();
+      }
+      if (welcomeModal) welcomeModal.style.display = 'none';
+      getAudioContext();
+      playSound('cheer');
+      spawnConfetti(60);
+    });
+  }
 
   // Modal setup
   const giftModal = document.getElementById('giftModal');
