@@ -80,6 +80,7 @@ const bgm = new Audio('assets/audio/dam-cuoi.mp3');
 bgm.loop = true;
 bgm.volume = 0.38; // Upbeat background level perfectly balanced under MC voice
 let isBgmPlaying = false;
+let serverSyncedBgmTime = 0;
 
 let audioCtx = null;
 function getAudioContext() {
@@ -177,6 +178,7 @@ function initGame() {
   scene.fog = new THREE.FogExp2(0x14060e, 0.009);
 
   const camera = new THREE.PerspectiveCamera(54, window.innerWidth / window.innerHeight, 0.1, 150);
+  camera.position.set(0, 3.0, 34.0); // Khởi tạo camera ngay phía sau vị trí spawn ở cổng cưới
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance', precision: 'mediump' });
   window.__renderer = renderer;
@@ -464,7 +466,7 @@ function initGame() {
     scene.add(swag);
   }
 
-  // 5. Fairy Lights Points (Đèn trần sao lung linh ở độ cao lớn)
+  // 5. Fairy Lights Points (Đèn trần sao lung linh phát sáng rực rỡ ở độ cao lớn)
   const fairyPointsGeo = new THREE.BufferGeometry();
   const fairyPositions = [];
   for (let z = -16; z <= 28; z += 2.0) {
@@ -475,18 +477,24 @@ function initGame() {
     }
   }
   fairyPointsGeo.setAttribute('position', new THREE.Float32BufferAttribute(fairyPositions, 3));
-  const fairyPointsMat = new THREE.PointsMaterial({ color: 0xffecb3, size: 0.12, sizeAttenuation: true });
+  const fairyPointsMat = new THREE.PointsMaterial({
+    color: 0xfff3d0,
+    size: 0.28,
+    sizeAttenuation: true,
+    transparent: true,
+    opacity: 0.95
+  });
   const fairyPoints = new THREE.Points(fairyPointsGeo, fairyPointsMat);
   scene.add(fairyPoints);
 
-  // 6. Chandeliers (Nâng cao lên Y = 6.6m - 7.0m để giải phóng 100% tầm nhìn tới màn hình LED)
+  // 6. Chandeliers (Nâng cao lên Y = 6.6m - 7.0m, bổ sung bóng hào quang phát sáng Glow rực rỡ)
   const chandelierMat = new THREE.MeshStandardMaterial({
     color: 0xd4af37, metalness: 0.95, roughness: 0.1,
-    emissive: 0x553300, emissiveIntensity: 0.4
+    emissive: 0x885500, emissiveIntensity: 0.8
   });
   const crystalMat = new THREE.MeshStandardMaterial({
-    color: 0xffffff, roughness: 0.1, transparent: true, opacity: 0.9,
-    emissive: 0xffe8aa, emissiveIntensity: 0.6
+    color: 0xffffff, roughness: 0.1, transparent: true, opacity: 0.95,
+    emissive: 0xfff0aa, emissiveIntensity: 1.4
   });
 
   function makeOptimizedChandelier(scale = 1.0) {
@@ -503,6 +511,21 @@ function initGame() {
     ring2.rotation.x = Math.PI / 2;
     ring2.position.y = -0.5 * scale;
     chGroup.add(ring2);
+
+    // Quả cầu phát sáng hào quang trung tâm đèn chùm (Chandelier Glow Core)
+    const bulbCore = new THREE.Mesh(
+      new THREE.SphereGeometry(0.35 * scale, 10, 10),
+      new THREE.MeshBasicMaterial({ color: 0xfff8d0, transparent: true, opacity: 0.9 })
+    );
+    bulbCore.position.y = -0.3 * scale;
+    chGroup.add(bulbCore);
+
+    const glowHalo = new THREE.Mesh(
+      new THREE.SphereGeometry(0.85 * scale, 10, 10),
+      new THREE.MeshBasicMaterial({ color: 0xffe082, transparent: true, opacity: 0.35 })
+    );
+    glowHalo.position.y = -0.3 * scale;
+    chGroup.add(glowHalo);
 
     for (let a = 0; a < Math.PI * 2; a += Math.PI / 5) {
       const cr = new THREE.Mesh(new THREE.ConeGeometry(0.09 * scale, 0.45 * scale, 4), crystalMat);
@@ -695,14 +718,40 @@ function initGame() {
   stageTrim.position.y = 1.0;
   stageGroup.add(stageTrim);
 
-  // High-Resolution Widescreen LED Screen
-  const stageScreenTex = texLoader.load('assets/images/stage_screen_hires.png');
+  // High-Resolution Widescreen LED Screen with Dynamic Slideshow (Chuyển slide ảnh cưới động như màn hình LED thật)
+  const slideTextures = [
+    texLoader.load('assets/images/stage_screen_hires.png'),
+    texLoader.load('assets/images/wedding_concept_overview.jpg'),
+    texLoader.load('assets/images/wedding_concept_stage.jpg'),
+    texLoader.load('assets/images/wedding_concept_isometric_game.jpg')
+  ];
+  let currentSlideIdx = 0;
+  let nextSlideIdx = 1;
+  let slideTransition = 0; // 0 to 1
+
+  const ledScreenMat = new THREE.MeshBasicMaterial({
+    map: slideTextures[0],
+    color: 0xffffff
+  });
+
   const ledScreen = new THREE.Mesh(
     new THREE.PlaneGeometry(21, 8.5),
-    new THREE.MeshBasicMaterial({ map: stageScreenTex })
+    ledScreenMat
   );
   ledScreen.position.set(0, 5.25, -4.2);
   stageGroup.add(ledScreen);
+
+  // Đèn rọi màn hình LED và viền phát sáng rực rỡ
+  const ledGlowLight = new THREE.PointLight(0xff4488, 3.5, 22, 1.2);
+  ledGlowLight.position.set(0, 5.25, -2.5);
+  stageGroup.add(ledGlowLight);
+
+  const ledGlowPlane = new THREE.Mesh(
+    new THREE.PlaneGeometry(21.4, 8.9),
+    new THREE.MeshBasicMaterial({ color: 0xff2255, transparent: true, opacity: 0.18 })
+  );
+  ledGlowPlane.position.set(0, 5.25, -4.22);
+  stageGroup.add(ledGlowPlane);
 
   // Black Starcloth Wings
   const starClothMat = new THREE.MeshStandardMaterial({ color: 0x08080c, roughness: 0.95 });
@@ -827,7 +876,7 @@ function initGame() {
   // Local Player Container on Red Carpet (Spawn ngay Cổng Cưới Z = 28.5)
   const playerGroup = new THREE.Group();
   playerGroup.position.set(0, 0, 28.5);
-  playerGroup.rotation.y = Math.PI; // Lưng quay về camera, mặt hướng thẳng tới sân khấu
+  playerGroup.rotation.y = 0; // 0 rad = mặt hướng về Z âm (sân khấu), lưng quay về camera!
   scene.add(playerGroup);
 
   let playerMeshBones = null;
@@ -1318,7 +1367,7 @@ function initGame() {
     const tmpl = (playerGender === 'female') ? avatarTemplates.female : avatarTemplates.male;
     const model = cloneSkinnedGltf(tmpl);
     model.scale.set(1.35, 1.35, 1.35);
-    model.rotation.y = 0; // Model chuẩn gốc hướng về phía trước theo group
+    model.rotation.y = Math.PI; // Xoay 180 độ để lưng quay về camera, mặt hướng thẳng tới sân khấu đám cưới!
 
     applyOutfitColor(model, playerOutfitColor);
     attachAccessories(model, playerHasGlasses, playerHasSlippers);
@@ -1391,7 +1440,7 @@ function initGame() {
     const tmpl = isWoman ? avatarTemplates.female : avatarTemplates.male;
     const model = cloneSkinnedGltf(tmpl);
     model.scale.set(1.35, 1.35, 1.35);
-    model.rotation.y = 0; // Model chuẩn gốc hướng về phía trước theo group
+    model.rotation.y = Math.PI; // Hướng mặt về phía sân khấu, lưng hướng về camera!
 
     applyOutfitColor(model, data.outfitColor || '#111827');
     attachAccessories(model, data.hasGlasses !== false, !!data.hasSlippers);
@@ -1563,16 +1612,31 @@ function initGame() {
             }
             if (data.assignedSpawn) {
               playerGroup.position.set(data.assignedSpawn.x, 0, data.assignedSpawn.z);
-              playerGroup.rotation.y = Math.PI;
-              currentFacingAngle = Math.PI;
+              playerGroup.rotation.y = 0;
+              currentFacingAngle = 0;
               lastSentX = data.assignedSpawn.x;
               lastSentZ = data.assignedSpawn.z;
-              lastSentRotY = Math.PI;
+              lastSentRotY = 0;
             }
             data.players.forEach(p => {
               if (p && p.id !== selfPlayerId) createRemotePlayer(p);
             });
             updateOnlineCountBadge(data.onlineCount);
+
+            // Đồng bộ tiến trình nhạc đám cưới toàn phòng theo thời gian thực của máy chủ
+            if (data.bgmCurrentTime !== undefined) {
+              serverSyncedBgmTime = data.bgmCurrentTime;
+              if (isBgmPlaying && Math.abs(bgm.currentTime - serverSyncedBgmTime) > 2.0) {
+                bgm.currentTime = serverSyncedBgmTime;
+              }
+            }
+          } else if (data.type === 'music_sync') {
+            if (data.currentTime !== undefined) {
+              serverSyncedBgmTime = data.currentTime;
+              if (isBgmPlaying && !bgm.paused && Math.abs(bgm.currentTime - serverSyncedBgmTime) > 3.0) {
+                bgm.currentTime = serverSyncedBgmTime;
+              }
+            }
           } else if (data.type === 'player_joined') {
             if (data.player && data.player.id !== selfPlayerId) {
               createRemotePlayer(data.player);
@@ -1747,18 +1811,21 @@ function initGame() {
     });
   }
 
-  // Camera & Touch Controls (Góc nhìn từ trên xuống 16 độ, cách 5.8m để toàn bộ avatar, biển tên và bọt thoại hiển thị thoáng đãng!)
-  let cameraYaw = 0;
-  let cameraPitch = 0.28;
+  // Camera & Touch Controls:
+  // Sân khấu nằm ở Z = -24 (hướng Z âm), Cổng cưới ở Z = 28.5 (hướng Z dương).
+  // Đặt camera nằm phía sau lưng avatar (camOffset.z > 0) nhìn về phía trước sân khấu:
+  let cameraYaw = 0; // Math.cos(0) = +1 -> camOffset.z > 0 (camera ở phía sau avatar, nhìn về phía trước)
+  let cameraPitch = 0.22;
   let cameraDistance = 5.8;
   const cameraTargetOffset = new THREE.Vector3(0, 0.85, 0);
 
   const input = { stickX: 0, stickY: 0, keyW: false, keyA: false, keyS: false, keyD: false };
   const playerSpeed = 7.0;
-  let currentFacingAngle = Math.PI;
+  let currentFacingAngle = 0; // 0 radian = nhìn thẳng về Z âm (về phía sân khấu, lưng hướng về camera!)
   let walkCycle = 0;
 
   const cameraSwipeZone = document.getElementById('cameraSwipeZone');
+  let hasInitialCameraSnapped = false;
   let isSwiping = false;
   let lastTouchX = 0, lastTouchY = 0;
 
@@ -2140,15 +2207,18 @@ function initGame() {
       playSound('cheer');
       blastConfetti(playerGroup.position.x, 3, playerGroup.position.z);
 
-      // 1. TỰ ĐỘNG PHÁT NHẠC SỐNG HÀ TÂY ĐÁM CƯỚI NGÀY XƯA SÔI ĐỘNG!
+      // 1. TỰ ĐỘNG PHÁT NHẠC ĐÁM CƯỚI ĐỒNG BỘ TOÀN BỘ KHÁCH MỜI!
       isBgmPlaying = true;
-      bgm.currentTime = 0;
+      if (serverSyncedBgmTime > 0) {
+        bgm.currentTime = serverSyncedBgmTime;
+      }
       bgm.play().then(() => {
         updateBgmBtnState();
       }).catch(e => {
         console.log("BGM autoplay waiting for touch:", e);
         const unlockAudio = () => {
           if (isBgmPlaying && bgm.paused) {
+            if (serverSyncedBgmTime > 0) bgm.currentTime = serverSyncedBgmTime;
             bgm.play().then(() => updateBgmBtnState()).catch(() => {});
           }
           window.removeEventListener('pointerdown', unlockAudio);
@@ -2310,14 +2380,29 @@ function initGame() {
   // Animation Loop & Network Sync
   const clock = new THREE.Clock();
   let lastNetSyncTime = 0;
-  let lastSentX = 0, lastSentZ = 28.5, lastSentRotY = Math.PI;
+  let lastSentX = 0, lastSentZ = 28.5, lastSentRotY = 0;
   let wasMoving = false;
 
+  let lastSlideChangeTime = 0;
   function animate() {
     requestAnimationFrame(animate);
 
     const delta = Math.min(clock.getDelta(), 0.1);
     const now = performance.now();
+
+    // Hiệu ứng màn hình LED phát sáng & chuyển slide ảnh cưới động (mỗi 4.5 giây đổi ảnh kèm hiệu ứng fade nhấp nháy ánh sáng)
+    if (now - lastSlideChangeTime > 4500 && slideTextures.length > 0) {
+      lastSlideChangeTime = now;
+      currentSlideIdx = (currentSlideIdx + 1) % slideTextures.length;
+      if (ledScreenMat) {
+        ledScreenMat.map = slideTextures[currentSlideIdx];
+        ledScreenMat.needsUpdate = true;
+      }
+    }
+    // Hiệu ứng LED rực rỡ nhấp nháy nhẹ theo nhịp điệu sân khấu
+    if (ledGlowLight) {
+      ledGlowLight.intensity = 3.2 + Math.sin(now * 0.003) * 0.9;
+    }
 
     let moveX = input.stickX;
     let moveZ = input.stickY;
@@ -2349,7 +2434,7 @@ function initGame() {
       playerGroup.position.x += worldMoveX * playerSpeed * delta;
       playerGroup.position.z += worldMoveZ * playerSpeed * delta;
 
-      const targetAngle = Math.atan2(worldMoveX, -worldMoveZ);
+      const targetAngle = Math.atan2(worldMoveX, worldMoveZ);
       
       let diff = targetAngle - currentFacingAngle;
       while (diff < -Math.PI) diff += Math.PI * 2;
@@ -2555,7 +2640,12 @@ function initGame() {
     );
 
     const desiredCamPos = playerGroup.position.clone().add(camOffset);
-    camera.position.lerp(desiredCamPos, 0.22);
+    if (!hasInitialCameraSnapped) {
+      camera.position.copy(desiredCamPos);
+      hasInitialCameraSnapped = true;
+    } else {
+      camera.position.lerp(desiredCamPos, 0.22);
+    }
     camera.lookAt(lookTarget);
 
     confettiMeshes.forEach(c => {
@@ -2615,9 +2705,13 @@ function initGame() {
 
   // Expose debug handle for validation & tests
   window.__game = {
+    camera,
+    scene,
     playerGroup,
     remotePlayers,
     input,
+    getCameraYaw: () => cameraYaw,
+    setCameraYaw: y => { cameraYaw = y; },
     getSelfPlayerId: () => selfPlayerId,
     getSocket: () => socket,
     getGroundElevation,

@@ -81,6 +81,8 @@ const wss = new WebSocketServer({ server });
 const players = new Map(); // ws -> playerState
 
 let guestCounter = 1;
+const serverStartTime = Date.now();
+const BGM_DURATION_SECONDS = 1116; // 18m36s of /home/zorinpc/dam-cuoi.mp3
 
 // Staggered distinct spawn points right at the Grand Wedding Entrance Gate (Cổng Cưới)
 const SPAWN_OFFSETS = [
@@ -132,7 +134,7 @@ wss.on('connection', (ws) => {
           hasSlippers: !!data.hasSlippers,
           x: defaultSpawn.x,
           z: defaultSpawn.z,
-          rotY: Math.PI, // Facing forward towards stage!
+          rotY: 0, // Facing forward towards stage (Z âm)!
           isWalking: false,
           isSeated: false,
           currentAnim: 'idle',
@@ -146,13 +148,17 @@ wss.on('connection', (ws) => {
           if (otherWs !== ws) existingList.push(pState);
         });
 
+        // Tính toán vị trí đồng bộ chính xác của bài nhạc đám cưới theo thời gian thực toàn cầu
+        const elapsedSec = ((Date.now() - serverStartTime) / 1000) % BGM_DURATION_SECONDS;
+
         ws.send(JSON.stringify({
           type: 'init',
           selfId: ws.playerId,
           assignedName: uniqueName,
           assignedSpawn: { x: playerState.x, z: playerState.z },
           players: existingList,
-          onlineCount: players.size
+          onlineCount: players.size,
+          bgmCurrentTime: elapsedSec
         }));
 
         // 2. Broadcast new player join to all OTHER connected clients!
@@ -262,8 +268,9 @@ wss.on('connection', (ws) => {
   });
 });
 
-// Periodic Heartbeat to clean up dead/closed sockets immediately
+// Periodic Heartbeat to clean up dead sockets & sync global wedding music timeline
 const heartbeatInterval = setInterval(() => {
+  const currentBgmSec = ((Date.now() - serverStartTime) / 1000) % BGM_DURATION_SECONDS;
   wss.clients.forEach((ws) => {
     if (ws.isAlive === false) {
       const p = players.get(ws);
@@ -275,6 +282,9 @@ const heartbeatInterval = setInterval(() => {
     }
     ws.isAlive = false;
     ws.ping();
+    if (ws.readyState === 1) {
+      ws.send(JSON.stringify({ type: 'music_sync', currentTime: currentBgmSec }));
+    }
   });
 }, 5000);
 
