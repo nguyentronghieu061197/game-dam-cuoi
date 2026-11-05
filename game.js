@@ -1,12 +1,11 @@
 /**
  * Ultra-Optimized Silky-Smooth 60 FPS Wedding Simulation (Rạp Cưới 80 Triệu Miền Bắc)
- * Engineered for Mobile Browsers & Messenger/Zalo WebView:
- * - 60 FPS Guaranteed: matrixAutoUpdate frozen on static NPCs (zero bone CPU overhead)
- * - 4 Strategic Dynamic Lights + GPU Emissive Glows (Zero light bottleneck)
- * - ShadowMap Disabled on Mobile (Saves 45% GPU fillrate)
- * - High-Resolution Pre-rendered Assets: stage_screen_hires.png, velvet_carpet_hires.png, floral_cluster_hires.png
- * - Diverse Seated Banquet Guests (Women in colorful dresses, Men in suits, Elders) across 16 tables
- * - Full Vietnamese Cultural Quest & Audio Experience
+ * - Prominent Bride My in Lavish White Bridal Gown & Veil, Groom Quân with Rose Boutonniere
+ * - Realistic Walking Leg Strides & Arm Swings on Player
+ * - Studio Northern Vietnamese Male MC Voice Auto-plays Immediately on Entry
+ * - Gender Selection: 🤵 Nam (Vest) / 👗 Nữ (Đầm Dạ Hội)
+ * - Real-time Floating Chat Bubbles above Avatar's Head
+ * - Complete Multiplayer WebSocket Hooks for Backend Integration
  */
 
 function cloneSkinnedGltf(source) {
@@ -57,6 +56,7 @@ function freezeMeshGraph(obj) {
 }
 
 let playerName = "Khách Quý";
+let playerGender = "male";
 
 const gameState = {
   quests: { gift: false, eat: false, ceremony: false },
@@ -66,7 +66,7 @@ const gameState = {
   interactionTarget: null
 };
 
-// Audio elements
+// Studio-Grade Northern Vietnamese Male MC Voice
 const audios = {
   mc_welcome: new Audio('assets/audio/mc_welcome.mp3'),
   mc_stage: new Audio('assets/audio/mc_stage.mp3'),
@@ -173,14 +173,13 @@ function initGame() {
 
   const camera = new THREE.PerspectiveCamera(54, window.innerWidth / window.innerHeight, 0.1, 150);
 
-  // OPTIMIZATION: Max pixelRatio 1.5, ShadowMap false for instant 60 FPS
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
   window.__renderer = renderer;
   renderer.setSize(window.innerWidth, window.innerHeight);
-  // Default to 1.0 for rock-solid 60 FPS on mobile webview
+
   const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
   renderer.setPixelRatio(isMobile ? 1.0 : Math.min(window.devicePixelRatio, 1.25));
-  renderer.shadowMap.enabled = false; // Disabling real-time shadow maps saves massive mobile GPU fillrate!
+  renderer.shadowMap.enabled = false;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
 
@@ -190,7 +189,7 @@ function initGame() {
     renderer.setSize(window.innerWidth, window.innerHeight);
   });
 
-  // --- 4 EFFICIENT LIGHTS ONLY (ZERO MOBILE BOTTLENECK) ---
+  // --- EFFICIENT LIGHTING ---
   const hemiLight = new THREE.HemisphereLight(0xfff7ed, 0x2e080e, 1.35);
   scene.add(hemiLight);
 
@@ -204,6 +203,13 @@ function initGame() {
   const camLight = new THREE.DirectionalLight(0xfffaea, 1.05);
   camera.add(camLight);
   scene.add(camera);
+
+  // Dedicated Stage Spotlight shining on Bride & Groom
+  const stageSpot = new THREE.SpotLight(0xffdf88, 3.5, 40, Math.PI / 4, 0.5);
+  stageSpot.position.set(0, 12, -18);
+  stageSpot.target.position.set(0, 1.5, -24);
+  scene.add(stageSpot);
+  scene.add(stageSpot.target);
 
   // --- RẠP CƯỚI 80 TRIỆU LUXURY ARCHITECTURE ---
   const HALL = { width: 28, length: 76, height: 5.6 };
@@ -219,7 +225,7 @@ function initGame() {
   floor.rotation.x = -Math.PI / 2;
   scene.add(floor);
 
-  // 2. Central True Velvet Crimson Carpet Runner (velvet_carpet_hires.png)
+  // 2. Central True Velvet Crimson Carpet Runner
   const texLoader = new THREE.TextureLoader();
   const carpetTex = texLoader.load('assets/images/velvet_carpet_hires.png');
   carpetTex.wrapS = THREE.RepeatWrapping;
@@ -242,7 +248,7 @@ function initGame() {
   bRight.position.set(2.45, 0.035, 0);
   scene.add(bLeft); scene.add(bRight);
 
-  // 3. Perimeter Pleated Curtains with 3D Folds & Pink Scalloped Valances
+  // 3. Perimeter Pleated Curtains
   const curtainMat = new THREE.MeshStandardMaterial({ color: 0xfffcf5, side: THREE.DoubleSide, roughness: 0.85 });
   const valanceMat = new THREE.MeshStandardMaterial({ color: 0xf472b6, side: THREE.DoubleSide, roughness: 0.65 });
 
@@ -270,7 +276,7 @@ function initGame() {
   backCurtain.position.set(0, HALL.height / 2, HALL.length / 2 - 0.5);
   scene.add(backCurtain);
 
-  // 4. TRẦN LỤA VOAN BỒNG BỀNH (CÁCH NHAU 3.5M - BẢN TỐI ƯU CỰC MƯỢT)
+  // 4. Ceiling Silk Swags
   const pinkSilkMat = new THREE.MeshStandardMaterial({ color: 0xfbcfe8, side: THREE.DoubleSide, roughness: 0.68 });
   const whiteSilkMat = new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.DoubleSide, roughness: 0.68 });
 
@@ -294,7 +300,7 @@ function initGame() {
     scene.add(swag);
   }
 
-  // 5. ĐÈN SAO FAIRY LIGHTS DÙNG POINTS (SIÊU NHẸ, 1 DRAW CALL CHO CẢ RẠP!)
+  // 5. Fairy Lights Points
   const fairyPointsGeo = new THREE.BufferGeometry();
   const fairyPositions = [];
   for (let z = -26; z <= 28; z += 1.8) {
@@ -309,7 +315,7 @@ function initGame() {
   const fairyPoints = new THREE.Points(fairyPointsGeo, fairyPointsMat);
   scene.add(fairyPoints);
 
-  // 6. ĐÈN CHÙM PHA LÊ HOÀNG GIA DÙNG EMISSIVE (KHÔNG CẦN POINTLIGHTS ĐỂ MƯỢT MÀ)
+  // 6. Chandeliers
   const chandelierMat = new THREE.MeshStandardMaterial({
     color: 0xd4af37, metalness: 0.95, roughness: 0.1,
     emissive: 0x553300, emissiveIntensity: 0.4
@@ -349,14 +355,12 @@ function initGame() {
     return chGroup;
   }
 
-  // 5 Central Axis Chandeliers
   for (let z = -18; z <= 22; z += 10.0) {
     const ch = makeOptimizedChandelier(1.0);
     ch.position.set(0, 3.8, z);
     scene.add(ch);
   }
 
-  // 8 Side Wing Chandeliers
   [-7.4, 7.4].forEach(cx => {
     for (let z = -13; z <= 18; z += 10.5) {
       const ch = makeOptimizedChandelier(0.72);
@@ -365,7 +369,7 @@ function initGame() {
     }
   });
 
-  // 7. CONTINUOUS LUSH FLORAL HEDGES (USING BATCHED QUADS & EMISSIVE GLOW)
+  // 7. Continuous Planters & Floral Hedges
   const floralTex = texLoader.load('assets/images/floral_cluster_hires.png');
   const orchidTex = texLoader.load('assets/images/orchid_spray_hires.png');
 
@@ -385,7 +389,6 @@ function initGame() {
     side: THREE.DoubleSide
   });
 
-  // Continuous Ground Planters along both sides of carpet
   [-2.85, 2.85].forEach(hx => {
     for (let z = -22; z <= 25; z += 2.8) {
       const hedgeGroup = new THREE.Group();
@@ -408,7 +411,6 @@ function initGame() {
     }
   });
 
-  // Elevated Open-frame Gold Pedestals with Cascading Orchids
   function makeElevatedFloralPedestal(height = 1.35) {
     const postGroup = new THREE.Group();
     const pw = 0.36;
@@ -509,7 +511,7 @@ function initGame() {
   deskGroup.add(boxLabel);
   scene.add(deskGroup);
 
-  // 10. SÂN KHẤU ĐẠI LỄ THÀNH HÔN CHUẨN ẢNH MẪU (HIGH-RES PRE-RENDERED STAGE SCREEN AT Z = -24)
+  // 10. SÂN KHẤU ĐẠI LỄ THÀNH HÔN CHUẨN ẢNH MẪU (AT Z = -24)
   const stageGroup = new THREE.Group();
   stageGroup.position.set(0, 0, -24);
 
@@ -610,7 +612,7 @@ function initGame() {
 
   scene.add(stageGroup);
 
-  // --- 11. 10 BANQUET TABLES WITH PRE-FROZEN SEATED GUESTS (ZERO BONE OVERHEAD!) ---
+  // --- 11. BANQUET TABLES & SEATED GUESTS ---
   const gltfLoader = new THREE.GLTFLoader();
   gltfLoader.setMeshoptDecoder(MeshoptDecoder);
 
@@ -620,7 +622,7 @@ function initGame() {
     });
   }
 
-  // 6 strategic full tables along the red carpet for silky-smooth 60 FPS mobile performance!
+  // 6 Strategic full tables along the red carpet for silky-smooth 60 FPS mobile performance!
   const tablePositions = [];
   const zCoords = [14, 2, -10];
   zCoords.forEach((z, idx) => {
@@ -628,7 +630,6 @@ function initGame() {
     tablePositions.push({ x: 7.4, z: z, capacity: 8, occupied: (idx === 1 ? 6 : 5) });
   });
 
-  // Additional 4 background dining tables (chairs & feast settings, zero heavy NPC polygons)
   const bgTablePositions = [
     { x: -7.4, z: 24 }, { x: 7.4, z: 24 },
     { x: -7.4, z: -18 }, { x: 7.4, z: -18 }
@@ -639,7 +640,6 @@ function initGame() {
 
   function makeChiavariChair() {
     const chair = new THREE.Group();
-    // 2 high-performance draw calls per chair instead of 6!
     const baseFrame = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.45, 0.44), chairMat);
     baseFrame.position.y = 0.225;
     chair.add(baseFrame);
@@ -660,15 +660,72 @@ function initGame() {
   scene.add(playerGroup);
 
   let playerMeshBones = null;
+  let initialLegQuats = null;
   let playerLabel = makeBillboardSprite(playerName, "#ffffff", "#0284c7");
-  playerLabel.position.set(0, 2.9, 0);
+  playerLabel.position.set(0, 2.08, 0);
   playerGroup.add(playerLabel);
 
   function updatePlayerNameLabel(name) {
     playerGroup.remove(playerLabel);
     playerLabel = makeBillboardSprite(name, "#ffffff", "#0284c7");
-    playerLabel.position.set(0, 2.9, 0);
+    playerLabel.position.set(0, 2.08, 0);
     playerGroup.add(playerLabel);
+  }
+
+  // Floating Speech Bubble for Chat (Tin nhắn hiển thị trên đầu nhân vật)
+  let activeSpeechBubble = null;
+  let bubbleTimeout = null;
+
+  function showSpeechBubble(targetGroup, text) {
+    if (activeSpeechBubble) {
+      targetGroup.remove(activeSpeechBubble);
+      clearTimeout(bubbleTimeout);
+    }
+    const bubble = makeSpeechBubbleSprite(text);
+    bubble.position.set(0, 2.62, 0); // Positioned directly over head without touching HUD!
+    targetGroup.add(bubble);
+    activeSpeechBubble = bubble;
+
+    bubbleTimeout = setTimeout(() => {
+      targetGroup.remove(bubble);
+      activeSpeechBubble = null;
+    }, 6000);
+  }
+
+  function makeSpeechBubbleSprite(text) {
+    const c = document.createElement('canvas');
+    c.width = 640; c.height = 160;
+    const ctx = c.getContext('2d');
+
+    // Speech bubble background with tail
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 12;
+    ctx.roundRect ? ctx.roundRect(16, 12, 608, 100, 20) : ctx.fillRect(16, 12, 608, 100);
+    ctx.fill();
+
+    // Bubble pointer tail
+    ctx.beginPath();
+    ctx.moveTo(300, 112);
+    ctx.lineTo(320, 148);
+    ctx.lineTo(340, 112);
+    ctx.fill();
+
+    ctx.strokeStyle = '#d97706';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 26px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, 320, 62);
+
+    const tex = new THREE.CanvasTexture(c);
+    const mat = new THREE.SpriteMaterial({ map: tex });
+    const sp = new THREE.Sprite(mat);
+    sp.scale.set(3.4, 0.85, 1);
+    return sp;
   }
 
   // Groom, Bride & MC containers on Stage
@@ -698,58 +755,73 @@ function initGame() {
   mcGroup.add(mcLabel);
 
   // Load ALL 3 Avatar Templates concurrently
+  let avatarTemplates = { male: null, female: null, elder: null };
+
   Promise.all([
     loadGltfAsync('assets/models/avatars/Asian_M_1_Busi.glb'),
     loadGltfAsync('assets/models/avatars/Asian_F_1_Busi.glb'),
     loadGltfAsync('assets/models/avatars/Asian_M_2_Busi.glb')
   ]).then(([m1Gltf, f1Gltf, m2Gltf]) => {
-    const maleTmpl = m1Gltf.scene;
-    const femaleTmpl = f1Gltf.scene;
-    const elderTmpl = m2Gltf.scene;
+    avatarTemplates.male = m1Gltf.scene;
+    avatarTemplates.female = f1Gltf.scene;
+    avatarTemplates.elder = m2Gltf.scene;
 
-    // 1. Setup Player (ONLY dynamic animated SkinnedMesh character!)
-    const playerModel = cloneSkinnedGltf(maleTmpl);
-    playerModel.scale.set(1.35, 1.35, 1.35);
-    playerModel.traverse(child => {
-      if (child.isMesh && child.material) {
-        child.material.roughness = 0.4;
-        child.material.metalness = 0.1;
-      }
-    });
-    poseFormalStanding(playerModel);
-    playerGroup.add(playerModel);
+    // 1. Setup Player Avatar (Chosen Gender: Nam vest / Nữ đầm dạ hội)
+    setupPlayerAvatar();
 
-    const pMesh = playerModel.getObjectByName('H_DDS_HighRes');
-    if (pMesh && pMesh.skeleton) {
-      playerMeshBones = {
-        mesh: pMesh,
-        la: pMesh.skeleton.bones.find(b => b.name === 'LeftArm'),
-        ra: pMesh.skeleton.bones.find(b => b.name === 'RightArm')
-      };
-    }
-
-    // 2. Setup Groom on Stage (Posed & Frozen!)
-    const groomModel = cloneSkinnedGltf(maleTmpl);
+    // 2. Setup Groom Quân on Stage (Tuxedo with Red Rose Boutonniere!)
+    const groomModel = cloneSkinnedGltf(avatarTemplates.male);
     groomModel.scale.set(1.35, 1.35, 1.35);
+
+    const boutonniere = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6), new THREE.MeshStandardMaterial({ color: 0xdc2626 }));
+    boutonniere.position.set(0.18, 1.35, 0.22);
+    groomModel.add(boutonniere);
+
     poseFormalStanding(groomModel);
     freezeMeshGraph(groomModel);
     groomGroup.add(groomModel);
 
-    // 3. Setup Bride My on Stage (Posed & Frozen!)
-    const brideModel = cloneSkinnedGltf(femaleTmpl);
+    // 3. Setup Bride My on Stage (VÁY CƯỚI TRẮNG BỒNG BỀNH & KHĂN VOAN CÔ DÂU!)
+    const brideModel = cloneSkinnedGltf(avatarTemplates.female);
     brideModel.scale.set(1.3, 1.3, 1.3);
     brideModel.traverse(child => {
       if (child.isMesh && child.material) {
         child.material = child.material.clone();
-        child.material.color = new THREE.Color(0xffffff);
+        child.material.color = new THREE.Color(0xffffff); // Pure white bridal bodice
       }
     });
+
+    // Flared 3D White Wedding Gown Bell Skirt (Váy cưới bồng bềnh lộng lẫy)
+    const skirtGeo = new THREE.CylinderGeometry(0.38, 1.45, 1.25, 24);
+    const skirtMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      roughness: 0.35,
+      metalness: 0.08
+    });
+    const skirt = new THREE.Mesh(skirtGeo, skirtMat);
+    skirt.position.set(0, 0.62, 0);
+    brideModel.add(skirt);
+
+    // Floating Bridal Veil cascading down hair (Khăn voan cô dâu)
+    const veilGeo = new THREE.PlaneGeometry(0.85, 1.6);
+    const veilMat = new THREE.MeshPhysicalMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.65,
+      roughness: 0.1,
+      side: THREE.DoubleSide
+    });
+    const veil = new THREE.Mesh(veilGeo, veilMat);
+    veil.position.set(0, 1.45, -0.22);
+    veil.rotation.x = -0.15;
+    brideModel.add(veil);
+
     poseFormalStanding(brideModel);
     freezeMeshGraph(brideModel);
     brideGroup.add(brideModel);
 
-    // 4. Setup MC on Stage (Posed & Frozen!)
-    const mcModel = cloneSkinnedGltf(elderTmpl);
+    // 4. Setup MC on Stage
+    const mcModel = cloneSkinnedGltf(avatarTemplates.elder);
     mcModel.scale.set(1.35, 1.35, 1.35);
     poseFormalStanding(mcModel);
     freezeMeshGraph(mcModel);
@@ -757,7 +829,7 @@ function initGame() {
 
     const dressColors = [0xdc2626, 0xec4899, 0x2563eb, 0x059669, 0xd97706, 0x7c3aed, 0xdb2777];
 
-    // 5. Build 10 Tables with Pre-frozen Seated Guests (ZERO CPU bone calculations!)
+    // 5. Build 6 Tables with Seated Guests (Properly seated onto the chair cushion!)
     tablePositions.forEach((pos, tableIdx) => {
       const tGroup = new THREE.Group();
       tGroup.position.set(pos.x, 0, pos.z);
@@ -815,15 +887,16 @@ function initGame() {
         tGroup.add(chair);
 
         if (i < pos.occupied) {
-          let guestTmpl = maleTmpl;
+          let guestTmpl = avatarTemplates.male;
           const isWoman = (i % 3 === 1);
           const isElder = (i % 3 === 2);
-          if (isWoman) guestTmpl = femaleTmpl;
-          else if (isElder) guestTmpl = elderTmpl;
+          if (isWoman) guestTmpl = avatarTemplates.female;
+          else if (isElder) guestTmpl = avatarTemplates.elder;
 
           const guest = cloneSkinnedGltf(guestTmpl);
           guest.scale.set(1.2, 1.2, 1.2);
-          guest.position.set(cx, -0.3, cz);
+          // Positioned sitting down onto the chair cushion with table concealing lower legs!
+          guest.position.set(cx, -0.35, cz);
           guest.rotation.y = -angle - Math.PI / 2;
 
           guest.traverse(child => {
@@ -837,7 +910,7 @@ function initGame() {
           });
 
           poseFormalStanding(guest);
-          freezeMeshGraph(guest); // ZERO bone update CPU overhead!
+          freezeMeshGraph(guest);
           tGroup.add(guest);
         }
       }
@@ -845,7 +918,7 @@ function initGame() {
       scene.add(tGroup);
     });
 
-    // Render 4 background dining tables without heavy NPCs
+    // Render background dining tables
     bgTablePositions.forEach(bpos => {
       const btGroup = new THREE.Group();
       btGroup.position.set(bpos.x, 0, bpos.z);
@@ -881,6 +954,51 @@ function initGame() {
       scene.add(btGroup);
     });
   });
+
+  let currentPlayerModel = null;
+
+  function setupPlayerAvatar() {
+    if (!avatarTemplates.male || !avatarTemplates.female) return;
+
+    if (currentPlayerModel) {
+      playerGroup.remove(currentPlayerModel);
+      currentPlayerModel = null;
+    }
+
+    const tmpl = (playerGender === 'female') ? avatarTemplates.female : avatarTemplates.male;
+    const model = cloneSkinnedGltf(tmpl);
+    model.scale.set(1.35, 1.35, 1.35);
+
+    if (playerGender === 'female') {
+      model.traverse(child => {
+        if (child.isMesh && child.material) {
+          child.material = child.material.clone();
+          child.material.color = new THREE.Color(0xdc2626); // Red cocktail dress
+        }
+      });
+    }
+
+    poseFormalStanding(model);
+    playerGroup.add(model);
+    currentPlayerModel = model;
+
+    const pMesh = model.getObjectByName('H_DDS_HighRes');
+    if (pMesh && pMesh.skeleton) {
+      const lul = pMesh.skeleton.bones.find(b => b.name === 'LeftUpLeg');
+      const rul = pMesh.skeleton.bones.find(b => b.name === 'RightUpLeg');
+      initialLegQuats = {
+        lul: lul ? lul.quaternion.clone() : new THREE.Quaternion(),
+        rul: rul ? rul.quaternion.clone() : new THREE.Quaternion()
+      };
+      playerMeshBones = {
+        mesh: pMesh,
+        la: pMesh.skeleton.bones.find(b => b.name === 'LeftArm'),
+        ra: pMesh.skeleton.bones.find(b => b.name === 'RightArm'),
+        lul: lul,
+        rul: rul
+      };
+    }
+  }
 
   const feastLabel = makeBillboardSprite("🍗 MÂM CỖ MIỀN BẮC", "#fef08a");
   feastLabel.position.set(-7.4, 2.2, 2);
@@ -1026,7 +1144,7 @@ function initGame() {
     if (k === 'd' || k === 'arrowright') input.keyD = false;
   });
 
-  // --- 15. INTERACTION & UI HOOKS ---
+  // --- 15. INTERACTION, AUDIO & CHAT HOOKS ---
   const zones = [
     { id: 'gate_gift', name: 'Hòm Mừng Hỷ', x: 4.0, z: 26, radius: 3.5, prompt: 'Bỏ phong bì mừng Quân & My' },
     { id: 'banquet', name: 'Mâm Cỗ Miền Bắc', x: -7.4, z: 2, radius: 4.0, prompt: 'Nếm cỗ 80 triệu & Cụng ly 1-2-3 Dô' },
@@ -1040,6 +1158,27 @@ function initGame() {
     if (gameState.interactionTarget) triggerInteraction(gameState.interactionTarget);
   });
 
+  // Chat bar hook (Tin nhắn hiển thị trên đầu nhân vật)
+  const chatInput = document.getElementById('chatInput');
+  const sendChatBtn = document.getElementById('sendChatBtn');
+
+  function handleSendChat() {
+    if (!chatInput) return;
+    const msg = chatInput.value.trim();
+    if (msg) {
+      showSpeechBubble(playerGroup, msg);
+      chatInput.value = '';
+    }
+  }
+
+  if (sendChatBtn) sendChatBtn.addEventListener('click', handleSendChat);
+  if (chatInput) {
+    chatInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') handleSendChat();
+    });
+  }
+
+  // Welcome modal: Gender selection & MC Auto-Welcome Voice!
   const welcomeModal = document.getElementById('welcomeModal');
   const enterWeddingBtn = document.getElementById('enterWeddingBtn');
   const playerNameInput = document.getElementById('playerNameInput');
@@ -1050,10 +1189,27 @@ function initGame() {
         playerName = playerNameInput.value.trim();
         updatePlayerNameLabel(playerName);
       }
+
+      // Check chosen gender
+      const genderRadios = document.getElementsByName('playerGender');
+      genderRadios.forEach(r => {
+        if (r.checked) playerGender = r.value;
+      });
+      setupPlayerAvatar();
+
       if (welcomeModal) welcomeModal.style.display = 'none';
       getAudioContext();
       playSound('cheer');
       blastConfetti(playerGroup.position.x, 3, playerGroup.position.z);
+
+      // MC NGAY LẬP TỨC ĐỌC LỜI CHÀO MỪNG BẰNG GIỌNG NAM MIỀN BẮC!
+      audios.mc_welcome.currentTime = 0;
+      audios.mc_welcome.play().catch(e => console.log("Audio notice:", e));
+      showDialogue(
+        "MC Đám Cưới Miền Bắc",
+        `Kính thưa toàn thể quan viên hai họ và quý vị khách quý! Xin nhiệt liệt chào mừng ${playerName} đã có mặt tại Lễ Thành Hôn của chú rể Quân và cô dâu My!`,
+        "assets/images/wedding_concept_stage.jpg"
+      );
     });
   }
 
@@ -1237,20 +1393,37 @@ function initGame() {
       currentFacingAngle += diff * Math.min(1, delta * 14);
       playerGroup.rotation.y = currentFacingAngle;
 
-      walkCycle += delta * 10;
-      playerGroup.position.y = Math.abs(Math.sin(walkCycle)) * 0.05;
+      // Realistic walking stride: alternating legs & swinging arms!
+      walkCycle += delta * 11;
+      playerGroup.position.y = Math.abs(Math.sin(walkCycle * 2)) * 0.05; // Body bobbing
 
-      if (playerMeshBones && playerMeshBones.la && playerMeshBones.ra) {
-        const swing = Math.sin(walkCycle) * 0.35;
-        playerMeshBones.la.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.8 + swing);
-        playerMeshBones.ra.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.8 - swing);
+      if (playerMeshBones && playerMeshBones.mesh && initialLegQuats) {
+        const swing = Math.sin(walkCycle) * 0.45;
+        // Arms
+        if (playerMeshBones.la) playerMeshBones.la.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.8 + swing);
+        if (playerMeshBones.ra) playerMeshBones.ra.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.8 - swing);
+        
+        // Alternating stepping legs relative to natural bind pose!
+        if (playerMeshBones.lul) {
+          playerMeshBones.lul.quaternion.copy(initialLegQuats.lul).multiply(
+            new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), swing)
+          );
+        }
+        if (playerMeshBones.rul) {
+          playerMeshBones.rul.quaternion.copy(initialLegQuats.rul).multiply(
+            new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), -swing)
+          );
+        }
+
         playerMeshBones.mesh.skeleton.update();
       }
     } else {
       playerGroup.position.y = 0;
-      if (playerMeshBones && playerMeshBones.la && playerMeshBones.ra) {
-        playerMeshBones.la.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.8);
-        playerMeshBones.ra.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.8);
+      if (playerMeshBones && playerMeshBones.mesh && initialLegQuats) {
+        if (playerMeshBones.la) playerMeshBones.la.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.8);
+        if (playerMeshBones.ra) playerMeshBones.ra.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.8);
+        if (playerMeshBones.lul) playerMeshBones.lul.quaternion.copy(initialLegQuats.lul);
+        if (playerMeshBones.rul) playerMeshBones.rul.quaternion.copy(initialLegQuats.rul);
         playerMeshBones.mesh.skeleton.update();
       }
     }
