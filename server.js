@@ -82,15 +82,15 @@ const players = new Map(); // ws -> playerState
 
 let guestCounter = 1;
 
-// Staggered distinct spawn points along the red carpet entrance so players never spawn on top of each other!
+// Staggered distinct spawn points right at the Grand Wedding Entrance Gate (Cổng Cưới)
 const SPAWN_OFFSETS = [
-  { x: -0.9, z: 2.2 },
-  { x: 0.9, z: 2.2 },
-  { x: -1.3, z: 3.6 },
-  { x: 1.3, z: 3.6 },
-  { x: 0.0, z: 4.8 },
-  { x: -1.0, z: 5.8 },
-  { x: 1.0, z: 5.8 }
+  { x: -0.9, z: 28.5 },
+  { x: 0.9, z: 28.5 },
+  { x: -1.3, z: 27.2 },
+  { x: 1.3, z: 27.2 },
+  { x: 0.0, z: 29.2 },
+  { x: -0.9, z: 26.0 },
+  { x: 0.9, z: 26.0 }
 ];
 
 wss.on('connection', (ws) => {

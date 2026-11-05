@@ -11,7 +11,15 @@
   <meta property="og:image" content="assets/images/wedding_concept_overview.jpg">
   <meta property="og:type" content="game">
 
-  <link rel="stylesheet" href="style.css?v=4.1">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+
+  <script>
+    window.__appVersion = Date.now();
+    document.write('<link rel="stylesheet" href="style.css?v=' + window.__appVersion + '">');
+  </script>
+  <noscript><link rel="stylesheet" href="style.css"></noscript>
   <!-- Three.js 3D Engine, MeshoptDecoder & GLTFLoader -->
   <script src="assets/three.min.js"></script>
   <script src="assets/meshopt_decoder.js"></script>
@@ -190,6 +198,8 @@
     </div>
   </div>
 
-  <script src="game.js?v=4.1"></script>
+  <script>
+    document.write('<script src="game.js?v=' + (window.__appVersion || Date.now()) + '"><\/script>');
+  </script>
 </body>
 </html>

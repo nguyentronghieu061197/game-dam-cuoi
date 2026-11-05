@@ -215,7 +215,7 @@ function initGame() {
   scene.add(stageSpot.target);
 
   // Rạp Cưới 80 Triệu Architecture (Nâng cao trần & đèn chùm chuẩn Ballroom 5 sao, không che màn hình LED!)
-  const HALL = { width: 28, length: 76, height: 8.6 };
+  const HALL = { width: 22, length: 76, height: 8.6 };
 
   // 1. Floor
   const floorTex = createBallroomFloorTexture();
@@ -227,6 +227,16 @@ function initGame() {
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(HALL.width, HALL.length), floorMat);
   floor.rotation.x = -Math.PI / 2;
   scene.add(floor);
+
+  // 1B. Grand Ballroom Ceiling (Trần dạ tiệc kín sang trọng, triệt tiêu khoảng không tối đen!)
+  const ceilingMat = new THREE.MeshStandardMaterial({
+    color: 0x1e1822,
+    roughness: 0.85
+  });
+  const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(HALL.width, HALL.length), ceilingMat);
+  ceiling.position.set(0, HALL.height, 0);
+  ceiling.rotation.x = Math.PI / 2;
+  scene.add(ceiling);
 
   // 2. Velvet Crimson Carpet
   const texLoader = new THREE.TextureLoader();
@@ -275,6 +285,160 @@ function initGame() {
   const backCurtain = new THREE.Mesh(new THREE.PlaneGeometry(HALL.width, HALL.height), curtainMat);
   backCurtain.position.set(0, HALL.height / 2, HALL.length / 2 - 0.5);
   scene.add(backCurtain);
+
+  // 3B. Luxury Wall Decor: Trụ Cột La Mã Mạ Vàng, Đèn Tường Pha Lê Ấm & Bộ Tranh Ảnh Cưới Quân - My
+  const colMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.35 });
+  const colTrimMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.92, roughness: 0.18 });
+  const sconceGlowMat = new THREE.MeshStandardMaterial({
+    color: 0xfff3d0,
+    emissive: 0xffb74d,
+    emissiveIntensity: 0.85,
+    roughness: 0.2
+  });
+
+  // Nạp 4 tranh ảnh cưới nghệ thuật khổ lớn của cô dâu chú rể
+  const galleryTexs = [
+    texLoader.load('assets/images/photo_gallery_1.png'),
+    texLoader.load('assets/images/photo_gallery_2.png'),
+    texLoader.load('assets/images/photo_gallery_3.png'),
+    texLoader.load('assets/images/photo_gallery_4.png')
+  ];
+
+  [-HALL.width / 2 + 0.35, HALL.width / 2 - 0.35].forEach((wallX, sideIdx) => {
+    const isLeft = sideIdx === 0;
+    // Góc xoay hướng 18 độ về phía lối đi thảm đỏ để khách luôn nhìn rõ tranh cưới từ mọi vị trí
+    const rotY = isLeft ? (Math.PI / 2 - 0.32) : (-Math.PI / 2 + 0.32);
+
+    // 1. Trụ cột cổ điển đắp nổi viền vàng bề thế & đèn tường pha lê dọc 2 bên sảnh
+    const colZs = [-24, -16, -8, 0, 8, 16, 24];
+    colZs.forEach(cz => {
+      const colGroup = new THREE.Group();
+      colGroup.position.set(wallX + (isLeft ? 0.35 : -0.35), 0, cz);
+
+      // Thân cột trụ vuông cổ điển nhô ra khỏi tường tạo chiều sâu kiến trúc
+      const shaft = new THREE.Mesh(new THREE.BoxGeometry(0.75, HALL.height, 0.5), colMat);
+      shaft.position.y = HALL.height / 2;
+      colGroup.add(shaft);
+
+      const base = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.5, 0.65), colTrimMat);
+      base.position.y = 0.25;
+      colGroup.add(base);
+
+      const capital = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.5, 0.65), colTrimMat);
+      capital.position.y = HALL.height - 0.25;
+      colGroup.add(capital);
+
+      // Đèn tường pha lê hoàng gia phát ánh sáng vàng ấm áp
+      const sconceArm = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.38, 8), colTrimMat);
+      sconceArm.rotation.z = Math.PI / 2;
+      sconceArm.position.set(isLeft ? 0.3 : -0.3, 3.8, 0);
+      colGroup.add(sconceArm);
+
+      const sconceLamp = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.09, 0.42, 8), sconceGlowMat);
+      sconceLamp.position.set(isLeft ? 0.5 : -0.5, 3.95, 0);
+      colGroup.add(sconceLamp);
+
+      scene.add(colGroup);
+    });
+
+    // 2. Bộ Khung Tranh Ảnh Cưới Khổ Lớn Quân & My Mạ Vàng Sang Trọng
+    const photoZs = [-20, -12, -4, 4, 12, 20];
+    photoZs.forEach((pz, pIdx) => {
+      const photoGroup = new THREE.Group();
+      photoGroup.position.set(wallX + (isLeft ? 0.45 : -0.45), 3.6, pz);
+      photoGroup.rotation.y = rotY;
+
+      // Khung tranh mạ vàng đắp nổi khổ lớn
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(2.6, 3.6, 0.12), colTrimMat);
+      photoGroup.add(frame);
+
+      // Mặt tranh ảnh cưới
+      const tex = galleryTexs[(pIdx + (isLeft ? 0 : 2)) % galleryTexs.length];
+      const portrait = new THREE.Mesh(
+        new THREE.PlaneGeometry(2.35, 3.35),
+        new THREE.MeshStandardMaterial({
+          map: tex,
+          roughness: 0.35,
+          emissive: 0x331c08,
+          emissiveIntensity: 0.35
+        })
+      );
+      portrait.position.z = 0.065;
+      photoGroup.add(portrait);
+
+      // Đèn rọi tranh phía trên khung mạ vàng
+      const picLamp = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.9, 8), colTrimMat);
+      picLamp.rotation.z = Math.PI / 2;
+      picLamp.position.set(0, 1.95, 0.3);
+      photoGroup.add(picLamp);
+
+      scene.add(photoGroup);
+    });
+  });
+
+  // 3C. Cổng Hoa Cưới Hoành Tráng & Khu Đón Khách (Grand Wedding Entrance Gate tại Z = 25.5 - 29.5)
+  const welcomeSignTex = texLoader.load('assets/images/welcome_sign.png');
+  const gateGroup = new THREE.Group();
+  gateGroup.position.set(0, 0, 29.2);
+
+  // Vòm cổng cưới uốn lượn viền vàng
+  const archTop = new THREE.Mesh(
+    new THREE.TorusGeometry(3.0, 0.22, 10, 24, Math.PI),
+    colTrimMat
+  );
+  archTop.position.set(0, 3.8, 0);
+  gateGroup.add(archTop);
+
+  [-2.95, 2.95].forEach(gx => {
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.26, 3.8, 16), colTrimMat);
+    post.position.set(gx, 1.9, 0);
+    gateGroup.add(post);
+
+    const plinth = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.5, 0.85), colMat);
+    plinth.position.set(gx, 0.25, 0);
+    gateGroup.add(plinth);
+  });
+
+  // Chùm hoa lan & hoa hồng trang trí uốn quanh vòm cổng cưới
+  for (let a = 0; a <= Math.PI; a += Math.PI / 7) {
+    const fx = Math.cos(a) * 3.0;
+    const fy = 3.8 + Math.sin(a) * 3.0;
+    const flSpr = new THREE.Mesh(new THREE.PlaneGeometry(0.95, 0.75), valanceMat);
+    flSpr.position.set(fx, fy, 0.15);
+    gateGroup.add(flSpr);
+  }
+  scene.add(gateGroup);
+
+  // Bảng Đón Khách Lễ Thành Hôn Quân & My (Đặt ngay cạnh thảm đỏ tại Z = 24.5, xoay hướng đón mắt người chơi)
+  const gateEaselGroup = new THREE.Group();
+  gateEaselGroup.position.set(-2.8, 0, 24.8);
+  gateEaselGroup.rotation.y = 0.38;
+
+  const easelLegs = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 2.1, 6), colTrimMat);
+  easelLegs.position.y = 1.05;
+  gateEaselGroup.add(easelLegs);
+
+  const signBoard = new THREE.Mesh(
+    new THREE.PlaneGeometry(2.4, 1.4),
+    new THREE.MeshBasicMaterial({ map: welcomeSignTex })
+  );
+  signBoard.position.set(0, 1.45, 0.06);
+  gateEaselGroup.add(signBoard);
+  scene.add(gateEaselGroup);
+
+  // Bàn lễ tân đón khách & Hòm Mừng Hỷ mạ vàng bên phải thảm đỏ tại Z = 24.8
+  const recepGroup = new THREE.Group();
+  recepGroup.position.set(2.8, 0, 24.8);
+  recepGroup.rotation.y = -0.32;
+
+  const recepTable = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.85, 0.8), new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.7 }));
+  recepTable.position.y = 0.425;
+  recepGroup.add(recepTable);
+
+  const giftBox = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.45, 0.45), colTrimMat);
+  giftBox.position.set(0, 1.08, 0);
+  recepGroup.add(giftBox);
+  scene.add(recepGroup);
 
   // 4. Ceiling Silk Swags (Đẩy cao lên sát đỉnh trần Y = 8.1m, tạo khoảng hở thoáng đãng phía trước sân khấu!)
   const pinkSilkMat = new THREE.MeshStandardMaterial({ color: 0xfbcfe8, side: THREE.DoubleSide, roughness: 0.68 });
@@ -660,9 +824,10 @@ function initGame() {
     return chair;
   }
 
-  // Local Player Container on Red Carpet (Spawn at Z = 2)
+  // Local Player Container on Red Carpet (Spawn ngay Cổng Cưới Z = 28.5)
   const playerGroup = new THREE.Group();
-  playerGroup.position.set(0, 0, 2);
+  playerGroup.position.set(0, 0, 28.5);
+  playerGroup.rotation.y = Math.PI; // Lưng quay về camera, mặt hướng thẳng tới sân khấu
   scene.add(playerGroup);
 
   let playerMeshBones = null;
@@ -1153,6 +1318,7 @@ function initGame() {
     const tmpl = (playerGender === 'female') ? avatarTemplates.female : avatarTemplates.male;
     const model = cloneSkinnedGltf(tmpl);
     model.scale.set(1.35, 1.35, 1.35);
+    model.rotation.y = 0; // Model chuẩn gốc hướng về phía trước theo group
 
     applyOutfitColor(model, playerOutfitColor);
     attachAccessories(model, playerHasGlasses, playerHasSlippers);
@@ -1225,6 +1391,7 @@ function initGame() {
     const tmpl = isWoman ? avatarTemplates.female : avatarTemplates.male;
     const model = cloneSkinnedGltf(tmpl);
     model.scale.set(1.35, 1.35, 1.35);
+    model.rotation.y = 0; // Model chuẩn gốc hướng về phía trước theo group
 
     applyOutfitColor(model, data.outfitColor || '#111827');
     attachAccessories(model, data.hasGlasses !== false, !!data.hasSlippers);
@@ -1396,6 +1563,11 @@ function initGame() {
             }
             if (data.assignedSpawn) {
               playerGroup.position.set(data.assignedSpawn.x, 0, data.assignedSpawn.z);
+              playerGroup.rotation.y = Math.PI;
+              currentFacingAngle = Math.PI;
+              lastSentX = data.assignedSpawn.x;
+              lastSentZ = data.assignedSpawn.z;
+              lastSentRotY = Math.PI;
             }
             data.players.forEach(p => {
               if (p && p.id !== selfPlayerId) createRemotePlayer(p);
@@ -1578,12 +1750,12 @@ function initGame() {
   // Camera & Touch Controls (Góc nhìn từ trên xuống 16 độ, cách 5.8m để toàn bộ avatar, biển tên và bọt thoại hiển thị thoáng đãng!)
   let cameraYaw = 0;
   let cameraPitch = 0.28;
-  const cameraDistance = 5.8;
+  let cameraDistance = 5.8;
   const cameraTargetOffset = new THREE.Vector3(0, 0.85, 0);
 
   const input = { stickX: 0, stickY: 0, keyW: false, keyA: false, keyS: false, keyD: false };
   const playerSpeed = 7.0;
-  let currentFacingAngle = 0;
+  let currentFacingAngle = Math.PI;
   let walkCycle = 0;
 
   const cameraSwipeZone = document.getElementById('cameraSwipeZone');
@@ -1669,7 +1841,7 @@ function initGame() {
 
   // Interaction, Chat & Emotion Reactions Hooks
   const zones = [
-    { id: 'gate_gift', name: 'Hòm Mừng Hỷ', x: 4.0, z: 26, radius: 3.5, prompt: 'Bỏ phong bì mừng Quân & My' },
+    { id: 'gate_gift', name: 'Hòm Mừng Hỷ', x: 4.0, z: 28.5, radius: 3.5, prompt: 'Bỏ phong bì mừng Quân & My' },
     { id: 'banquet', name: 'Mâm Cỗ Miền Bắc', x: -7.4, z: 2, radius: 4.0, prompt: 'Nếm cỗ 80 triệu & Cụng ly 1-2-3 Dô' },
     { id: 'stage_mc', name: 'Sân Khấu Lễ Thành Hôn', x: 0, z: -22, radius: 6.0, prompt: 'Dự Lễ Thành Hôn cùng MC & Quân - My' }
   ];
@@ -1986,10 +2158,7 @@ function initGame() {
         window.addEventListener('keydown', unlockAudio);
       });
 
-      // 2. MC TỰ ĐỘNG PHÁT BẰNG GIỌNG ĐỌC NAM MIỀN BẮC (ĐÃ BỎ PHẦN TEXT / HỘP THOẠI CHÀO MỪNG!)
-      audios.mc_welcome.currentTime = 0;
-      audios.mc_welcome.volume = 1.0;
-      audios.mc_welcome.play().catch(e => console.log("Audio notice:", e));
+      // 2. Âm thanh nền BGM tự động phát (đã có sẵn lời chúc mừng của ban nhạc đám cưới)
     });
   }
 
@@ -2141,7 +2310,7 @@ function initGame() {
   // Animation Loop & Network Sync
   const clock = new THREE.Clock();
   let lastNetSyncTime = 0;
-  let lastSentX = 0, lastSentZ = 0, lastSentRotY = 0;
+  let lastSentX = 0, lastSentZ = 28.5, lastSentRotY = Math.PI;
   let wasMoving = false;
 
   function animate() {
@@ -2180,7 +2349,7 @@ function initGame() {
       playerGroup.position.x += worldMoveX * playerSpeed * delta;
       playerGroup.position.z += worldMoveZ * playerSpeed * delta;
 
-      const targetAngle = Math.atan2(worldMoveX, worldMoveZ);
+      const targetAngle = Math.atan2(worldMoveX, -worldMoveZ);
       
       let diff = targetAngle - currentFacingAngle;
       while (diff < -Math.PI) diff += Math.PI * 2;
