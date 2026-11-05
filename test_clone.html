@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="assets/three.min.js"></script>
+  <script src="assets/meshopt_decoder.js"></script>
+  <script src="assets/GLTFLoader.js"></script>
+</head>
+<body>
+  <div id="status">Loading...</div>
+  <script>
+    function cloneSkinnedGltf(source) {
+      const cloneLookup = new Map();
+      const clone = source.clone();
+      
+      function parallelTraverse(a, b) {
+        cloneLookup.set(a, b);
+        for (let i = 0; i < a.children.length; i++) {
+          parallelTraverse(a.children[i], b.children[i]);
+        }
+      }
+      parallelTraverse(source, clone);
+
+      clone.traverse(child => {
+        if (child.isSkinnedMesh) {
+          const clonedBones = child.skeleton.bones.map(b => cloneLookup.get(b) || b);
+          child.skeleton = new THREE.Skeleton(clonedBones, child.skeleton.boneInverses);
+          child.bind(child.skeleton, child.bindMatrix);
+        }
+      });
+      return clone;
+    }
+
+    const loader = new THREE.GLTFLoader();
+    loader.setMeshoptDecoder(MeshoptDecoder);
+    loader.load('assets/models/avatars/Asian_M_1_Busi.glb', (gltf) => {
+      try {
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 100);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(400, 400);
+        document.body.appendChild(renderer.domElement);
+
+        for (let i = 0; i < 20; i++) {
+          const c = cloneSkinnedGltf(gltf.scene);
+          c.position.set(i * 0.5, 0, 0);
+          scene.add(c);
+        }
+
+        renderer.render(scene, camera);
+        document.getElementById('status').innerText = 'SUCCESS: 20 clones rendered!';
+      } catch (e) {
+        document.getElementById('status').innerText = 'ERROR: ' + e;
+      }
+    });
+  </script>
+</body>
+</html>

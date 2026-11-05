@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="assets/three.min.js"></script>
+  <script src="assets/meshopt_decoder.js"></script>
+  <script src="assets/GLTFLoader.js"></script>
+</head>
+<body>
+  <div id="status">Loading...</div>
+  <script>
+    const loader = new THREE.GLTFLoader();
+    loader.setMeshoptDecoder(MeshoptDecoder);
+
+    loader.load('assets/models/Xbot.glb', (gltfX) => {
+      const animClips = gltfX.animations;
+      loader.load('assets/models/avatars/Asian_M_1_Busi.glb', (gltfBusi) => {
+        try {
+          const model = gltfBusi.scene;
+          const mixer = new THREE.AnimationMixer(model);
+
+          // Retarget clips
+          animClips.forEach(clip => {
+            const retargeted = clip.clone();
+            retargeted.tracks.forEach(track => {
+              track.name = track.name.replace('mixamorig:', '').replace('mixamorig', '');
+            });
+            const action = mixer.clipAction(retargeted);
+            if (clip.name.toLowerCase().includes('idle')) action.play();
+          });
+
+          document.getElementById('status').innerText = 'SUCCESS: Retargeted and playing idle!';
+        } catch (e) {
+          document.getElementById('status').innerText = 'ERROR: ' + e;
+        }
+      });
+    });
+  </script>
+</body>
+</html>

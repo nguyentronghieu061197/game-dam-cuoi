@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="assets/three.min.js"></script>
+  <script src="assets/meshopt_decoder.js"></script>
+  <script src="assets/GLTFLoader.js"></script>
+</head>
+<body>
+  <div id="status">Loading...</div>
+  <script>
+    const loader = new THREE.GLTFLoader();
+    loader.setMeshoptDecoder(MeshoptDecoder);
+    loader.load('assets/models/avatars/Asian_M_1_Busi.glb', (gltf) => {
+      const model = gltf.scene;
+      const leftArm = model.getObjectByName('LeftArm');
+      const rightArm = model.getObjectByName('RightArm');
+
+      // Test rotating arms down
+      if (leftArm) leftArm.rotateZ(1.2);
+      if (rightArm) rightArm.rotateZ(-1.2);
+
+      document.getElementById('status').innerText = 'Posed successfully!';
+    });
+  </script>
+</body>
+</html>
