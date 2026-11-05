@@ -47,10 +47,27 @@
         <button class="dialogue-next-btn" id="dialogueNextBtn">Tiếp tục ➔</button>
       </div>
 
-      <!-- Chat Input Overlay (Tin nhắn nổi trên đầu nhân vật) -->
-      <div id="chatOverlay" style="position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 480px; z-index: 50; display: flex; gap: 8px; pointer-events: auto;">
-        <input type="text" id="chatInput" placeholder="💬 Nhập tin nhắn gửi cả rạp cưới..." style="flex: 1; padding: 10px 16px; border-radius: 25px; border: 1px solid rgba(255,215,0,0.6); background: rgba(0,0,0,0.65); color: #fff; font-size: 14px; outline: none; backdrop-filter: blur(8px);">
-        <button id="sendChatBtn" style="padding: 10px 18px; border-radius: 25px; border: none; background: linear-gradient(135deg, #d97706, #b45309); color: #fff; font-weight: bold; font-size: 14px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.4);">Gửi 🚀</button>
+      <!-- Chat Input & Emotion Reaction Overlay -->
+      <div id="chatOverlay" style="position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 520px; z-index: 50; display: flex; gap: 8px; align-items: center; pointer-events: auto;">
+        <button id="emojiPickerBtn" style="width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid rgba(255,215,0,0.8); background: rgba(20,10,18,0.85); font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.5); backdrop-filter: blur(8px);">💖</button>
+        <input type="text" id="chatInput" placeholder="💬 Nhập tin nhắn gửi cả rạp cưới..." style="flex: 1; height: 44px; padding: 0 16px; border-radius: 25px; border: 1px solid rgba(255,215,0,0.6); background: rgba(0,0,0,0.7); color: #fff; font-size: 14px; outline: none; backdrop-filter: blur(8px); box-sizing: border-box;">
+        <button id="sendChatBtn" style="height: 44px; padding: 0 18px; border-radius: 25px; border: none; background: linear-gradient(135deg, #d97706, #b45309); color: #fff; font-weight: bold; font-size: 14px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.4); white-space: nowrap;">Gửi 🚀</button>
+      </div>
+
+      <!-- Emotion Reaction Palette (Popup menu above emoji button) -->
+      <div id="emojiPalette" style="display: none; position: absolute; bottom: 68px; left: 50%; transform: translateX(-50%); background: rgba(24, 12, 22, 0.95); border: 2px solid #ffd700; border-radius: 20px; padding: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.8); backdrop-filter: blur(14px); z-index: 55; grid-template-columns: repeat(6, 1fr); gap: 10px; width: 320px; box-sizing: border-box;">
+        <button class="reaction-item" data-emoji="💖" title="Thả Tim" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; font-size: 24px; padding: 8px 0; cursor: pointer; transition: transform 0.15s;">💖</button>
+        <button class="reaction-item" data-emoji="🥂" title="Cụng Ly" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; font-size: 24px; padding: 8px 0; cursor: pointer; transition: transform 0.15s;">🥂</button>
+        <button class="reaction-item" data-emoji="👏" title="Vỗ Tay" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; font-size: 24px; padding: 8px 0; cursor: pointer; transition: transform 0.15s;">👏</button>
+        <button class="reaction-item" data-emoji="🌹" title="Tặng Hoa" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; font-size: 24px; padding: 8px 0; cursor: pointer; transition: transform 0.15s;">🌹</button>
+        <button class="reaction-item" data-emoji="🎉" title="Pháo Hoa" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; font-size: 24px; padding: 8px 0; cursor: pointer; transition: transform 0.15s;">🎉</button>
+        <button class="reaction-item" data-emoji="💌" title="Hỷ Sự" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; font-size: 24px; padding: 8px 0; cursor: pointer; transition: transform 0.15s;">💌</button>
+        <button class="reaction-item" data-emoji="🥰" title="Hạnh Phúc" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; font-size: 24px; padding: 8px 0; cursor: pointer; transition: transform 0.15s;">🥰</button>
+        <button class="reaction-item" data-emoji="🥳" title="Ăn Tiệc" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; font-size: 24px; padding: 8px 0; cursor: pointer; transition: transform 0.15s;">🥳</button>
+        <button class="reaction-item" data-emoji="👰" title="Cô Dâu" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; font-size: 24px; padding: 8px 0; cursor: pointer; transition: transform 0.15s;">👰</button>
+        <button class="reaction-item" data-emoji="🤵" title="Chú Rể" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; font-size: 24px; padding: 8px 0; cursor: pointer; transition: transform 0.15s;">🤵</button>
+        <button class="reaction-item" data-emoji="🍻" title="Nâng Bia" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; font-size: 24px; padding: 8px 0; cursor: pointer; transition: transform 0.15s;">🍻</button>
+        <button class="reaction-item" data-emoji="💯" title="Tuyệt Vời" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; font-size: 24px; padding: 8px 0; cursor: pointer; transition: transform 0.15s;">💯</button>
       </div>
 
       <!-- Controls Layer (Joystick + Camera Swipe + Action Button) -->

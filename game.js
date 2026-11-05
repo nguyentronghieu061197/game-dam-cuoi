@@ -1,11 +1,13 @@
 /**
- * Ultra-Optimized Silky-Smooth 60 FPS Wedding Simulation (Rạp Cưới 80 Triệu Miền Bắc)
- * - Prominent Bride My in Lavish White Bridal Gown & Veil, Groom Quân with Rose Boutonniere
- * - Realistic Walking Leg Strides & Arm Swings on Player
- * - Studio Northern Vietnamese Male MC Voice Auto-plays Immediately on Entry
+ * Ultra-Optimized Grand 3D Wedding Simulation & Multiplayer Metaverse (Rạp Cưới 80 Triệu Miền Bắc)
+ * - Multi-user Realtime Networking via WebSockets (Node.js backend)
+ * - Emotion Reaction Picker (💖, 🥂, 👏, 🌹, 🎉, 💌, 🥰, 🥳, 👰, 🤵, 🍻, 💯) with 3D Floating Reaction Bursts
+ * - Comic Speech Bubbles over Avatar Heads synchronized across all players
  * - Gender Selection: 🤵 Nam (Vest) / 👗 Nữ (Đầm Dạ Hội)
- * - Real-time Floating Chat Bubbles above Avatar's Head
- * - Complete Multiplayer WebSocket Hooks for Backend Integration
+ * - Prominent Bride My (White Wedding Gown & Veil) & Groom Quân (Rose Boutonniere)
+ * - Authentic Northern Vietnamese Male MC Voice (Nam Minh Neural)
+ * - Seated Banquet Guests on Chiavari Chairs
+ * - Silky-Smooth 60 FPS Mobile Performance
  */
 
 function cloneSkinnedGltf(source) {
@@ -128,7 +130,6 @@ function playSound(type) {
   }
 }
 
-// Procedural PBR Floor Texture
 function createBallroomFloorTexture() {
   const c = document.createElement('canvas');
   c.width = 512; c.height = 512;
@@ -166,7 +167,6 @@ function createBallroomFloorTexture() {
 function initGame() {
   const canvas = document.getElementById('gameCanvas');
 
-  // Scene & Atmosphere
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x14060e);
   scene.fog = new THREE.FogExp2(0x14060e, 0.009);
@@ -189,7 +189,7 @@ function initGame() {
     renderer.setSize(window.innerWidth, window.innerHeight);
   });
 
-  // --- EFFICIENT LIGHTING ---
+  // Lighting
   const hemiLight = new THREE.HemisphereLight(0xfff7ed, 0x2e080e, 1.35);
   scene.add(hemiLight);
 
@@ -211,10 +211,10 @@ function initGame() {
   scene.add(stageSpot);
   scene.add(stageSpot.target);
 
-  // --- RẠP CƯỚI 80 TRIỆU LUXURY ARCHITECTURE ---
+  // Rạp Cưới 80 Triệu Architecture
   const HALL = { width: 28, length: 76, height: 5.6 };
 
-  // 1. Polished Ballroom Floor
+  // 1. Floor
   const floorTex = createBallroomFloorTexture();
   const floorMat = new THREE.MeshStandardMaterial({
     map: floorTex,
@@ -225,17 +225,14 @@ function initGame() {
   floor.rotation.x = -Math.PI / 2;
   scene.add(floor);
 
-  // 2. Central True Velvet Crimson Carpet Runner
+  // 2. Velvet Crimson Carpet
   const texLoader = new THREE.TextureLoader();
   const carpetTex = texLoader.load('assets/images/velvet_carpet_hires.png');
   carpetTex.wrapS = THREE.RepeatWrapping;
   carpetTex.wrapT = THREE.RepeatWrapping;
   carpetTex.repeat.set(1, 16);
 
-  const carpetMat = new THREE.MeshStandardMaterial({
-    map: carpetTex,
-    roughness: 0.75
-  });
+  const carpetMat = new THREE.MeshStandardMaterial({ map: carpetTex, roughness: 0.75 });
   const carpet = new THREE.Mesh(new THREE.PlaneGeometry(4.8, 68), carpetMat);
   carpet.rotation.x = -Math.PI / 2;
   carpet.position.set(0, 0.02, 0);
@@ -248,7 +245,7 @@ function initGame() {
   bRight.position.set(2.45, 0.035, 0);
   scene.add(bLeft); scene.add(bRight);
 
-  // 3. Perimeter Pleated Curtains
+  // 3. Perimeter Curtains
   const curtainMat = new THREE.MeshStandardMaterial({ color: 0xfffcf5, side: THREE.DoubleSide, roughness: 0.85 });
   const valanceMat = new THREE.MeshStandardMaterial({ color: 0xf472b6, side: THREE.DoubleSide, roughness: 0.65 });
 
@@ -369,7 +366,7 @@ function initGame() {
     }
   });
 
-  // 7. Continuous Planters & Floral Hedges
+  // 7. Planters & Floral Hedges
   const floralTex = texLoader.load('assets/images/floral_cluster_hires.png');
   const orchidTex = texLoader.load('assets/images/orchid_spray_hires.png');
 
@@ -452,7 +449,7 @@ function initGame() {
     });
   }
 
-  // 8. Entrance Wedding Portrait on Easel Stand (Ảnh cưới Quân & My)
+  // 8. Easel Stand with Wedding Portrait
   const photoTexture = texLoader.load('assets/images/wedding_concept_stage.jpg');
   const easelGroup = new THREE.Group();
   easelGroup.position.set(-3.6, 0, 26);
@@ -486,7 +483,7 @@ function initGame() {
   easelGroup.add(photoLabel);
   scene.add(easelGroup);
 
-  // 9. Reception Desk & Gift Box (Bàn lễ tân & Hòm tiền mừng)
+  // 9. Reception Desk & Gift Box
   const deskGroup = new THREE.Group();
   deskGroup.position.set(4.0, 0, 26);
 
@@ -511,7 +508,7 @@ function initGame() {
   deskGroup.add(boxLabel);
   scene.add(deskGroup);
 
-  // 10. SÂN KHẤU ĐẠI LỄ THÀNH HÔN CHUẨN ẢNH MẪU (AT Z = -24)
+  // 10. SÂN KHẤU ĐẠI LỄ THÀNH HÔN (AT Z = -24)
   const stageGroup = new THREE.Group();
   stageGroup.position.set(0, 0, -24);
 
@@ -529,7 +526,7 @@ function initGame() {
   stageTrim.position.y = 1.0;
   stageGroup.add(stageTrim);
 
-  // High-Resolution Widescreen LED Screen with stage_screen_hires.png
+  // High-Resolution Widescreen LED Screen
   const stageScreenTex = texLoader.load('assets/images/stage_screen_hires.png');
   const ledScreen = new THREE.Mesh(
     new THREE.PlaneGeometry(21, 8.5),
@@ -538,7 +535,7 @@ function initGame() {
   ledScreen.position.set(0, 5.25, -4.2);
   stageGroup.add(ledScreen);
 
-  // Black Starcloth Wings (Cánh gà sao đêm)
+  // Black Starcloth Wings
   const starClothMat = new THREE.MeshStandardMaterial({ color: 0x08080c, roughness: 0.95 });
   [-11.6, 11.6].forEach(sx => {
     const starWing = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 8.5), starClothMat);
@@ -612,7 +609,7 @@ function initGame() {
 
   scene.add(stageGroup);
 
-  // --- 11. BANQUET TABLES & SEATED GUESTS ---
+  // Banquet Tables & Seated Guests
   const gltfLoader = new THREE.GLTFLoader();
   gltfLoader.setMeshoptDecoder(MeshoptDecoder);
 
@@ -622,7 +619,6 @@ function initGame() {
     });
   }
 
-  // 6 Strategic full tables along the red carpet for silky-smooth 60 FPS mobile performance!
   const tablePositions = [];
   const zCoords = [14, 2, -10];
   zCoords.forEach((z, idx) => {
@@ -654,7 +650,7 @@ function initGame() {
     return chair;
   }
 
-  // 12. Player Container on Red Carpet (Spawn at Z = 2)
+  // Local Player Container on Red Carpet (Spawn at Z = 2)
   const playerGroup = new THREE.Group();
   playerGroup.position.set(0, 0, 2);
   scene.add(playerGroup);
@@ -673,23 +669,24 @@ function initGame() {
   }
 
   // Floating Speech Bubble for Chat (Tin nhắn hiển thị trên đầu nhân vật)
-  let activeSpeechBubble = null;
-  let bubbleTimeout = null;
+  const activeBubbles = new Map(); // group -> { sprite, timeout }
 
   function showSpeechBubble(targetGroup, text) {
-    if (activeSpeechBubble) {
-      targetGroup.remove(activeSpeechBubble);
-      clearTimeout(bubbleTimeout);
+    if (activeBubbles.has(targetGroup)) {
+      const b = activeBubbles.get(targetGroup);
+      targetGroup.remove(b.sprite);
+      clearTimeout(b.timeout);
     }
     const bubble = makeSpeechBubbleSprite(text);
-    bubble.position.set(0, 2.62, 0); // Positioned directly over head without touching HUD!
+    bubble.position.set(0, 2.62, 0);
     targetGroup.add(bubble);
-    activeSpeechBubble = bubble;
 
-    bubbleTimeout = setTimeout(() => {
+    const t = setTimeout(() => {
       targetGroup.remove(bubble);
-      activeSpeechBubble = null;
+      activeBubbles.delete(targetGroup);
     }, 6000);
+
+    activeBubbles.set(targetGroup, { sprite: bubble, timeout: t });
   }
 
   function makeSpeechBubbleSprite(text) {
@@ -697,14 +694,12 @@ function initGame() {
     c.width = 640; c.height = 160;
     const ctx = c.getContext('2d');
 
-    // Speech bubble background with tail
     ctx.fillStyle = '#ffffff';
     ctx.shadowColor = 'rgba(0,0,0,0.5)';
     ctx.shadowBlur = 12;
     ctx.roundRect ? ctx.roundRect(16, 12, 608, 100, 20) : ctx.fillRect(16, 12, 608, 100);
     ctx.fill();
 
-    // Bubble pointer tail
     ctx.beginPath();
     ctx.moveTo(300, 112);
     ctx.lineTo(320, 148);
@@ -726,6 +721,49 @@ function initGame() {
     const sp = new THREE.Sprite(mat);
     sp.scale.set(3.4, 0.85, 1);
     return sp;
+  }
+
+  // 3D Floating Emotion Reactions (Hiệu ứng cảm xúc bay lên từ đầu nhân vật)
+  const floatingReactions = [];
+
+  function spawnFloatingReaction(targetGroup, emoji) {
+    const c = document.createElement('canvas');
+    c.width = 128; c.height = 128;
+    const ctx = c.getContext('2d');
+    ctx.font = '72px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(emoji, 64, 64);
+
+    const tex = new THREE.CanvasTexture(c);
+    const count = 3;
+    for (let i = 0; i < count; i++) {
+      const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, opacity: 1.0 });
+      const sp = new THREE.Sprite(mat);
+      sp.scale.set(0.8, 0.8, 1);
+      
+      const offsetX = (Math.random() - 0.5) * 0.8;
+      const offsetZ = (Math.random() - 0.5) * 0.8;
+      sp.position.set(
+        targetGroup.position.x + offsetX,
+        targetGroup.position.y + 2.4 + i * 0.35,
+        targetGroup.position.z + offsetZ
+      );
+      scene.add(sp);
+
+      floatingReactions.push({
+        sprite: sp,
+        vx: (Math.random() - 0.5) * 0.02,
+        vy: 0.035 + Math.random() * 0.025,
+        vz: (Math.random() - 0.5) * 0.02,
+        life: 1.0,
+        decay: 0.016
+      });
+    }
+
+    if (emoji === '🥂' || emoji === '🍻') playSound('clink');
+    else if (emoji === '🎉' || emoji === '👏') playSound('cheer');
+    else playSound('coin');
   }
 
   // Groom, Bride & MC containers on Stage
@@ -754,8 +792,11 @@ function initGame() {
   mcLabel.position.set(0, 2.9, 0);
   mcGroup.add(mcLabel);
 
-  // Load ALL 3 Avatar Templates concurrently
+  // Avatar Templates
   let avatarTemplates = { male: null, female: null, elder: null };
+
+  // Multiplayer Remote Players Map: playerId -> { group, model, label, targetX, targetZ, targetRotY, isWalking, bones }
+  const remotePlayers = new Map();
 
   Promise.all([
     loadGltfAsync('assets/models/avatars/Asian_M_1_Busi.glb'),
@@ -766,10 +807,10 @@ function initGame() {
     avatarTemplates.female = f1Gltf.scene;
     avatarTemplates.elder = m2Gltf.scene;
 
-    // 1. Setup Player Avatar (Chosen Gender: Nam vest / Nữ đầm dạ hội)
+    // 1. Setup Local Player Avatar
     setupPlayerAvatar();
 
-    // 2. Setup Groom Quân on Stage (Tuxedo with Red Rose Boutonniere!)
+    // 2. Setup Groom Quân on Stage
     const groomModel = cloneSkinnedGltf(avatarTemplates.male);
     groomModel.scale.set(1.35, 1.35, 1.35);
 
@@ -787,11 +828,10 @@ function initGame() {
     brideModel.traverse(child => {
       if (child.isMesh && child.material) {
         child.material = child.material.clone();
-        child.material.color = new THREE.Color(0xffffff); // Pure white bridal bodice
+        child.material.color = new THREE.Color(0xffffff);
       }
     });
 
-    // Flared 3D White Wedding Gown Bell Skirt (Váy cưới bồng bềnh lộng lẫy)
     const skirtGeo = new THREE.CylinderGeometry(0.38, 1.45, 1.25, 24);
     const skirtMat = new THREE.MeshStandardMaterial({
       color: 0xffffff,
@@ -802,7 +842,6 @@ function initGame() {
     skirt.position.set(0, 0.62, 0);
     brideModel.add(skirt);
 
-    // Floating Bridal Veil cascading down hair (Khăn voan cô dâu)
     const veilGeo = new THREE.PlaneGeometry(0.85, 1.6);
     const veilMat = new THREE.MeshPhysicalMaterial({
       color: 0xffffff,
@@ -829,7 +868,7 @@ function initGame() {
 
     const dressColors = [0xdc2626, 0xec4899, 0x2563eb, 0x059669, 0xd97706, 0x7c3aed, 0xdb2777];
 
-    // 5. Build 6 Tables with Seated Guests (Properly seated onto the chair cushion!)
+    // 5. Build 6 Tables with Seated Guests
     tablePositions.forEach((pos, tableIdx) => {
       const tGroup = new THREE.Group();
       tGroup.position.set(pos.x, 0, pos.z);
@@ -895,7 +934,6 @@ function initGame() {
 
           const guest = cloneSkinnedGltf(guestTmpl);
           guest.scale.set(1.2, 1.2, 1.2);
-          // Positioned sitting down onto the chair cushion with table concealing lower legs!
           guest.position.set(cx, -0.35, cz);
           guest.rotation.y = -angle - Math.PI / 2;
 
@@ -953,6 +991,9 @@ function initGame() {
       }
       scene.add(btGroup);
     });
+
+    // Initialize multiplayer connection once templates are ready
+    initMultiplayer();
   });
 
   let currentPlayerModel = null;
@@ -973,7 +1014,7 @@ function initGame() {
       model.traverse(child => {
         if (child.isMesh && child.material) {
           child.material = child.material.clone();
-          child.material.color = new THREE.Color(0xdc2626); // Red cocktail dress
+          child.material.color = new THREE.Color(0xdc2626);
         }
       });
     }
@@ -1000,11 +1041,150 @@ function initGame() {
     }
   }
 
+  // Helper to spawn remote player avatars
+  function createRemotePlayer(data) {
+    if (remotePlayers.has(data.id)) return;
+
+    const rGroup = new THREE.Group();
+    rGroup.position.set(data.x || 0, 0, data.z || 2);
+    rGroup.rotation.y = data.rotY || 0;
+    scene.add(rGroup);
+
+    const isWoman = data.gender === 'female';
+    const tmpl = isWoman ? avatarTemplates.female : avatarTemplates.male;
+    const model = cloneSkinnedGltf(tmpl);
+    model.scale.set(1.35, 1.35, 1.35);
+
+    if (isWoman) {
+      model.traverse(child => {
+        if (child.isMesh && child.material) {
+          child.material = child.material.clone();
+          child.material.color = new THREE.Color(0xdc2626);
+        }
+      });
+    }
+
+    poseFormalStanding(model);
+    rGroup.add(model);
+
+    const label = makeBillboardSprite(data.name || "Khách Quý", "#ffffff", isWoman ? "#db2777" : "#0284c7");
+    label.position.set(0, 2.08, 0);
+    rGroup.add(label);
+
+    const pMesh = model.getObjectByName('H_DDS_HighRes');
+    let rBones = null;
+    let rInitLegs = null;
+    if (pMesh && pMesh.skeleton) {
+      const lul = pMesh.skeleton.bones.find(b => b.name === 'LeftUpLeg');
+      const rul = pMesh.skeleton.bones.find(b => b.name === 'RightUpLeg');
+      rInitLegs = {
+        lul: lul ? lul.quaternion.clone() : new THREE.Quaternion(),
+        rul: rul ? rul.quaternion.clone() : new THREE.Quaternion()
+      };
+      rBones = {
+        mesh: pMesh,
+        la: pMesh.skeleton.bones.find(b => b.name === 'LeftArm'),
+        ra: pMesh.skeleton.bones.find(b => b.name === 'RightArm'),
+        lul: lul,
+        rul: rul,
+        initialLegs: rInitLegs
+      };
+    }
+
+    remotePlayers.set(data.id, {
+      id: data.id,
+      name: data.name,
+      group: rGroup,
+      model: model,
+      bones: rBones,
+      targetX: data.x || 0,
+      targetZ: data.z || 2,
+      targetRotY: data.rotY || 0,
+      isWalking: false,
+      walkCycle: 0
+    });
+  }
+
+  function removeRemotePlayer(id) {
+    if (!remotePlayers.has(id)) return;
+    const rp = remotePlayers.get(id);
+    scene.remove(rp.group);
+    remotePlayers.delete(id);
+  }
+
+  // --- MULTIPLAYER WEBSOCKET CONNECTION ---
+  let socket = null;
+  let selfPlayerId = null;
+
+  function initMultiplayer() {
+    try {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}`;
+      socket = new WebSocket(wsUrl);
+
+      socket.addEventListener('open', () => {
+        console.log("🌐 Connected to Wedding Multiplayer Server!");
+        socket.send(JSON.stringify({
+          type: 'join',
+          name: playerName,
+          gender: playerGender,
+          x: playerGroup.position.x,
+          z: playerGroup.position.z
+        }));
+      });
+
+      socket.addEventListener('message', (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'init') {
+            selfPlayerId = data.selfId;
+            data.players.forEach(p => createRemotePlayer(p));
+          } else if (data.type === 'player_joined') {
+            createRemotePlayer(data.player);
+          } else if (data.type === 'player_moved') {
+            const rp = remotePlayers.get(data.id);
+            if (rp) {
+              rp.targetX = data.x;
+              rp.targetZ = data.z;
+              rp.targetRotY = data.rotY;
+              rp.isWalking = data.isWalking;
+            }
+          } else if (data.type === 'player_chat') {
+            if (data.id === selfPlayerId) {
+              showSpeechBubble(playerGroup, data.text);
+            } else {
+              const rp = remotePlayers.get(data.id);
+              if (rp) showSpeechBubble(rp.group, data.text);
+            }
+          } else if (data.type === 'player_reaction') {
+            if (data.id === selfPlayerId) {
+              spawnFloatingReaction(playerGroup, data.emoji);
+            } else {
+              const rp = remotePlayers.get(data.id);
+              if (rp) spawnFloatingReaction(rp.group, data.emoji);
+            }
+          } else if (data.type === 'player_left') {
+            removeRemotePlayer(data.id);
+          }
+        } catch (e) {
+          console.error("Multiplayer packet error:", e);
+        }
+      });
+
+      socket.addEventListener('close', () => {
+        console.log("Multiplayer socket disconnected. Retrying in 4s...");
+        setTimeout(initMultiplayer, 4000);
+      });
+    } catch (e) {
+      console.log("Multiplayer setup notice:", e);
+    }
+  }
+
   const feastLabel = makeBillboardSprite("🍗 MÂM CỖ MIỀN BẮC", "#fef08a");
   feastLabel.position.set(-7.4, 2.2, 2);
   scene.add(feastLabel);
 
-  // --- 13. 3D CONFETTI & SPARKLERS ---
+  // 3D Confetti
   const confettiCount = 80;
   const confettiGeo = new THREE.PlaneGeometry(0.2, 0.2);
   const confettiColors = [0xef4444, 0xffd700, 0x3b82f6, 0x10b981, 0xec4899, 0xffffff];
@@ -1052,7 +1232,7 @@ function initGame() {
     return sprite;
   }
 
-  // --- 14. CINEMATIC OVER-THE-SHOULDER THIRD-PERSON CAMERA ---
+  // Camera & Touch Controls
   let cameraYaw = 0;
   let cameraPitch = 0.05;
   const cameraDistance = 4.2;
@@ -1144,7 +1324,7 @@ function initGame() {
     if (k === 'd' || k === 'arrowright') input.keyD = false;
   });
 
-  // --- 15. INTERACTION, AUDIO & CHAT HOOKS ---
+  // Interaction, Chat & Emotion Reactions Hooks
   const zones = [
     { id: 'gate_gift', name: 'Hòm Mừng Hỷ', x: 4.0, z: 26, radius: 3.5, prompt: 'Bỏ phong bì mừng Quân & My' },
     { id: 'banquet', name: 'Mâm Cỗ Miền Bắc', x: -7.4, z: 2, radius: 4.0, prompt: 'Nếm cỗ 80 triệu & Cụng ly 1-2-3 Dô' },
@@ -1158,7 +1338,7 @@ function initGame() {
     if (gameState.interactionTarget) triggerInteraction(gameState.interactionTarget);
   });
 
-  // Chat bar hook (Tin nhắn hiển thị trên đầu nhân vật)
+  // Chat bar hook
   const chatInput = document.getElementById('chatInput');
   const sendChatBtn = document.getElementById('sendChatBtn');
 
@@ -1166,7 +1346,11 @@ function initGame() {
     if (!chatInput) return;
     const msg = chatInput.value.trim();
     if (msg) {
-      showSpeechBubble(playerGroup, msg);
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ type: 'chat', text: msg }));
+      } else {
+        showSpeechBubble(playerGroup, msg);
+      }
       chatInput.value = '';
     }
   }
@@ -1175,6 +1359,37 @@ function initGame() {
   if (chatInput) {
     chatInput.addEventListener('keydown', e => {
       if (e.key === 'Enter') handleSendChat();
+    });
+  }
+
+  // Emotion Reaction Palette Picker
+  const emojiPickerBtn = document.getElementById('emojiPickerBtn');
+  const emojiPalette = document.getElementById('emojiPalette');
+
+  if (emojiPickerBtn && emojiPalette) {
+    emojiPickerBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isVisible = emojiPalette.style.display === 'grid';
+      emojiPalette.style.display = isVisible ? 'none' : 'grid';
+    });
+
+    document.querySelectorAll('.reaction-item').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const emoji = btn.dataset.emoji;
+        if (emoji) {
+          if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ type: 'reaction', emoji: emoji }));
+          } else {
+            spawnFloatingReaction(playerGroup, emoji);
+          }
+          emojiPalette.style.display = 'none';
+        }
+      });
+    });
+
+    window.addEventListener('click', () => {
+      if (emojiPalette.style.display === 'grid') emojiPalette.style.display = 'none';
     });
   }
 
@@ -1190,12 +1405,22 @@ function initGame() {
         updatePlayerNameLabel(playerName);
       }
 
-      // Check chosen gender
       const genderRadios = document.getElementsByName('playerGender');
       genderRadios.forEach(r => {
         if (r.checked) playerGender = r.value;
       });
       setupPlayerAvatar();
+
+      // Send join event to server
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({
+          type: 'join',
+          name: playerName,
+          gender: playerGender,
+          x: playerGroup.position.x,
+          z: playerGroup.position.z
+        }));
+      }
 
       if (welcomeModal) welcomeModal.style.display = 'none';
       getAudioContext();
@@ -1358,13 +1583,15 @@ function initGame() {
     else closeDialogue();
   });
 
-  // --- 16. ANIMATION & RENDER LOOP ---
+  // Animation Loop & Network Sync
   const clock = new THREE.Clock();
+  let lastNetSyncTime = 0;
 
   function animate() {
     requestAnimationFrame(animate);
 
     const delta = Math.min(clock.getDelta(), 0.1);
+    const now = performance.now();
 
     let moveX = input.stickX;
     let moveZ = input.stickY;
@@ -1374,8 +1601,9 @@ function initGame() {
     if (input.keyD) moveX += 1;
 
     const inputLen = Math.hypot(moveX, moveZ);
+    let isMoving = inputLen > 0.05;
 
-    if (inputLen > 0.05) {
+    if (isMoving) {
       const normX = moveX / Math.max(1, inputLen);
       const normZ = moveZ / Math.max(1, inputLen);
 
@@ -1393,17 +1621,14 @@ function initGame() {
       currentFacingAngle += diff * Math.min(1, delta * 14);
       playerGroup.rotation.y = currentFacingAngle;
 
-      // Realistic walking stride: alternating legs & swinging arms!
       walkCycle += delta * 11;
-      playerGroup.position.y = Math.abs(Math.sin(walkCycle * 2)) * 0.05; // Body bobbing
+      playerGroup.position.y = Math.abs(Math.sin(walkCycle * 2)) * 0.05;
 
       if (playerMeshBones && playerMeshBones.mesh && initialLegQuats) {
         const swing = Math.sin(walkCycle) * 0.45;
-        // Arms
         if (playerMeshBones.la) playerMeshBones.la.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.8 + swing);
         if (playerMeshBones.ra) playerMeshBones.ra.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.8 - swing);
         
-        // Alternating stepping legs relative to natural bind pose!
         if (playerMeshBones.lul) {
           playerMeshBones.lul.quaternion.copy(initialLegQuats.lul).multiply(
             new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), swing)
@@ -1431,6 +1656,71 @@ function initGame() {
     playerGroup.position.x = Math.max(-HALL.width / 2 + 1.8, Math.min(HALL.width / 2 - 1.8, playerGroup.position.x));
     playerGroup.position.z = Math.max(-30, Math.min(30, playerGroup.position.z));
 
+    // Throttled Multiplayer Position Sync (20 FPS / 50ms interval)
+    if (socket && socket.readyState === WebSocket.OPEN && (now - lastNetSyncTime > 50)) {
+      lastNetSyncTime = now;
+      socket.send(JSON.stringify({
+        type: 'move',
+        x: playerGroup.position.x,
+        z: playerGroup.position.z,
+        rotY: playerGroup.rotation.y,
+        isWalking: isMoving
+      }));
+    }
+
+    // Update & Interpolate Remote Players
+    remotePlayers.forEach(rp => {
+      rp.group.position.x += (rp.targetX - rp.group.position.x) * Math.min(1, delta * 12);
+      rp.group.position.z += (rp.targetZ - rp.group.position.z) * Math.min(1, delta * 12);
+
+      let rDiff = rp.targetRotY - rp.group.rotation.y;
+      while (rDiff < -Math.PI) rDiff += Math.PI * 2;
+      while (rDiff > Math.PI) rDiff -= Math.PI * 2;
+      rp.group.rotation.y += rDiff * Math.min(1, delta * 12);
+
+      if (rp.bones && rp.bones.mesh) {
+        if (rp.isWalking) {
+          rp.walkCycle += delta * 11;
+          const rSwing = Math.sin(rp.walkCycle) * 0.45;
+          if (rp.bones.la) rp.bones.la.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.8 + rSwing);
+          if (rp.bones.ra) rp.bones.ra.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.8 - rSwing);
+          if (rp.bones.lul && rp.bones.initialLegs) {
+            rp.bones.lul.quaternion.copy(rp.bones.initialLegs.lul).multiply(
+              new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), rSwing)
+            );
+          }
+          if (rp.bones.rul && rp.bones.initialLegs) {
+            rp.bones.rul.quaternion.copy(rp.bones.initialLegs.rul).multiply(
+              new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), -rSwing)
+            );
+          }
+          rp.bones.mesh.skeleton.update();
+        } else {
+          if (rp.bones.la) rp.bones.la.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.8);
+          if (rp.bones.ra) rp.bones.ra.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.8);
+          if (rp.bones.lul && rp.bones.initialLegs) rp.bones.lul.quaternion.copy(rp.bones.initialLegs.lul);
+          if (rp.bones.rul && rp.bones.initialLegs) rp.bones.rul.quaternion.copy(rp.bones.initialLegs.rul);
+          rp.bones.mesh.skeleton.update();
+        }
+      }
+    });
+
+    // Animate 3D Floating Emotion Reactions
+    for (let i = floatingReactions.length - 1; i >= 0; i--) {
+      const r = floatingReactions[i];
+      r.sprite.position.x += r.vx;
+      r.sprite.position.y += r.vy;
+      r.sprite.position.z += r.vz;
+      r.life -= r.decay;
+      r.sprite.material.opacity = Math.max(0, r.life);
+      r.sprite.scale.addScalar(0.005);
+      if (r.life <= 0) {
+        scene.remove(r.sprite);
+        floatingReactions.splice(i, 1);
+      }
+    }
+
+    // Camera follow
     const targetPos = playerGroup.position.clone().add(cameraTargetOffset);
     const shoulderOffset = new THREE.Vector3(0.85 * Math.cos(cameraYaw), 0, -0.85 * Math.sin(cameraYaw));
     const camOffset = new THREE.Vector3(
