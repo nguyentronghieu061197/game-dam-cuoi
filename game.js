@@ -68,13 +68,18 @@ const gameState = {
   interactionTarget: null
 };
 
-// Studio-Grade Northern Vietnamese Male MC Voice
+// Studio-Grade Northern Vietnamese Male MC Voice & Classic Hà Tây Wedding Organ Live BGM
 const audios = {
   mc_welcome: new Audio('assets/audio/mc_welcome.mp3'),
   mc_stage: new Audio('assets/audio/mc_stage.mp3'),
   mc_cake_wine: new Audio('assets/audio/mc_cake_wine.mp3'),
   mc_toast: new Audio('assets/audio/mc_toast.mp3')
 };
+
+const bgm = new Audio('assets/audio/wedding_bgm_hatay.mp3');
+bgm.loop = true;
+bgm.volume = 0.38; // Upbeat background level perfectly balanced under MC voice
+let isBgmPlaying = false;
 
 let audioCtx = null;
 function getAudioContext() {
@@ -1411,6 +1416,42 @@ function initGame() {
   const enterWeddingBtn = document.getElementById('enterWeddingBtn');
   const playerNameInput = document.getElementById('playerNameInput');
 
+  // BGM Toggle Controller (Nhạc sống Hà Tây 2006)
+  const bgmToggleBtn = document.getElementById('bgmToggleBtn');
+  const bgmIcon = document.getElementById('bgmIcon');
+  const bgmText = document.getElementById('bgmText');
+
+  function updateBgmBtnState() {
+    if (bgmIcon && bgmText && bgmToggleBtn) {
+      if (isBgmPlaying) {
+        bgmIcon.textContent = '🔊';
+        bgmText.textContent = 'Nhạc Sống Hà Tây';
+        bgmToggleBtn.style.borderColor = '#ffd700';
+        bgmToggleBtn.style.color = '#ffd700';
+      } else {
+        bgmIcon.textContent = '🔇';
+        bgmText.textContent = 'Tắt Nhạc';
+        bgmToggleBtn.style.borderColor = '#94a3b8';
+        bgmToggleBtn.style.color = '#94a3b8';
+      }
+    }
+  }
+
+  if (bgmToggleBtn) {
+    bgmToggleBtn.addEventListener('click', () => {
+      if (bgm.paused) {
+        bgm.play().then(() => {
+          isBgmPlaying = true;
+          updateBgmBtnState();
+        }).catch(e => console.log("BGM toggle notice:", e));
+      } else {
+        bgm.pause();
+        isBgmPlaying = false;
+        updateBgmBtnState();
+      }
+    });
+  }
+
   if (enterWeddingBtn) {
     enterWeddingBtn.addEventListener('click', () => {
       if (playerNameInput && playerNameInput.value.trim()) {
@@ -1440,14 +1481,28 @@ function initGame() {
       playSound('cheer');
       blastConfetti(playerGroup.position.x, 3, playerGroup.position.z);
 
-      // MC NGAY LẬP TỨC ĐỌC LỜI CHÀO MỪNG BẰNG GIỌNG NAM MIỀN BẮC!
+      // 1. TỰ ĐỘNG PHÁT NHẠC SỐNG HÀ TÂY ĐÁM CƯỚI NGÀY XƯA SÔI ĐỘNG!
+      isBgmPlaying = true;
+      bgm.currentTime = 0;
+      bgm.play().then(() => {
+        updateBgmBtnState();
+      }).catch(e => {
+        console.log("BGM autoplay waiting for touch:", e);
+        const unlockAudio = () => {
+          if (isBgmPlaying && bgm.paused) {
+            bgm.play().then(() => updateBgmBtnState()).catch(() => {});
+          }
+          window.removeEventListener('pointerdown', unlockAudio);
+          window.removeEventListener('keydown', unlockAudio);
+        };
+        window.addEventListener('pointerdown', unlockAudio);
+        window.addEventListener('keydown', unlockAudio);
+      });
+
+      // 2. MC TỰ ĐỘNG PHÁT BẰNG GIỌNG ĐỌC NAM MIỀN BẮC (ĐÃ BỎ PHẦN TEXT / HỘP THOẠI CHÀO MỪNG!)
       audios.mc_welcome.currentTime = 0;
+      audios.mc_welcome.volume = 1.0;
       audios.mc_welcome.play().catch(e => console.log("Audio notice:", e));
-      showDialogue(
-        "MC Đám Cưới Miền Bắc",
-        `Kính thưa toàn thể quan viên hai họ và quý vị khách quý! Xin nhiệt liệt chào mừng ${playerName} đã có mặt tại Lễ Thành Hôn của chú rể Quân và cô dâu My!`,
-        "assets/images/wedding_concept_stage.jpg"
-      );
     });
   }
 
