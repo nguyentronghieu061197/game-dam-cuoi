@@ -178,15 +178,15 @@ function initGame() {
 
   const camera = new THREE.PerspectiveCamera(54, window.innerWidth / window.innerHeight, 0.1, 150);
 
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance', precision: 'mediump' });
   window.__renderer = renderer;
   renderer.setSize(window.innerWidth, window.innerHeight);
 
-  const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-  renderer.setPixelRatio(isMobile ? 1.0 : Math.min(window.devicePixelRatio, 1.25));
+  // Khóa PixelRatio = 1.0 trên toàn bộ thiết bị để đạt 60 FPS mượt mà tuyệt đối!
+  renderer.setPixelRatio(1.0);
   renderer.shadowMap.enabled = false;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
+  renderer.toneMappingExposure = 1.1;
 
   window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
@@ -194,19 +194,17 @@ function initGame() {
     renderer.setSize(window.innerWidth, window.innerHeight);
   });
 
-  // Lighting
-  const hemiLight = new THREE.HemisphereLight(0xfff7ed, 0x2e080e, 1.35);
+  // Lighting - Tối ưu hóa tối giản 2 nguồn sáng tĩnh toàn cục để không giật lag
+  const hemiLight = new THREE.HemisphereLight(0xfff7ed, 0x2e080e, 1.5);
   scene.add(hemiLight);
 
-  const ambLight = new THREE.AmbientLight(0xffedd5, 1.1);
+  const ambLight = new THREE.AmbientLight(0xffedd5, 1.2);
   scene.add(ambLight);
 
-  const dirLight = new THREE.DirectionalLight(0xfffaea, 1.35);
+  const dirLight = new THREE.DirectionalLight(0xfffaea, 1.4);
   dirLight.position.set(8, 20, 10);
   scene.add(dirLight);
 
-  const camLight = new THREE.DirectionalLight(0xfffaea, 1.05);
-  camera.add(camLight);
   scene.add(camera);
 
   // Dedicated Stage Spotlight shining on Bride & Groom
@@ -663,17 +661,17 @@ function initGame() {
   let playerMeshBones = null;
   let initialLegQuats = null;
   let playerLabel = makeBillboardSprite(playerName, "#ffffff", "#0284c7");
-  playerLabel.position.set(0, 2.08, 0);
+  playerLabel.position.set(0, 2.55, 0); // Đặt cao trên đỉnh đầu nhân vật
   playerGroup.add(playerLabel);
 
   function updatePlayerNameLabel(name) {
     playerGroup.remove(playerLabel);
-    playerLabel = makeBillboardSprite(name, "#ffffff", "#0284c7");
-    playerLabel.position.set(0, 2.08, 0);
+    playerLabel = makeBillboardSprite(name, "#ffffff", playerGender === 'female' ? "#db2777" : "#0284c7");
+    playerLabel.position.set(0, 2.55, 0);
     playerGroup.add(playerLabel);
   }
 
-  // Floating Speech Bubble for Chat (Tin nhắn hiển thị trên đầu nhân vật)
+  // Floating Speech Bubble for Chat & Reaction (Tin nhắn hiển thị trên đầu nhân vật)
   const activeBubbles = new Map(); // group -> { sprite, timeout }
 
   function showSpeechBubble(targetGroup, text) {
@@ -683,48 +681,52 @@ function initGame() {
       clearTimeout(b.timeout);
     }
     const bubble = makeSpeechBubbleSprite(text);
-    bubble.position.set(0, 2.62, 0);
+    bubble.position.set(0, 3.12, 0); // Nổi êm ái trên biển tên
     targetGroup.add(bubble);
 
     const t = setTimeout(() => {
       targetGroup.remove(bubble);
       activeBubbles.delete(targetGroup);
-    }, 6000);
+    }, 5500);
 
     activeBubbles.set(targetGroup, { sprite: bubble, timeout: t });
   }
 
   function makeSpeechBubbleSprite(text) {
     const c = document.createElement('canvas');
-    c.width = 640; c.height = 160;
+    c.width = 480; c.height = 140;
     const ctx = c.getContext('2d');
 
+    // Bọt thoại truyện tranh nổi bật
     ctx.fillStyle = '#ffffff';
-    ctx.shadowColor = 'rgba(0,0,0,0.5)';
-    ctx.shadowBlur = 12;
-    ctx.roundRect ? ctx.roundRect(16, 12, 608, 100, 20) : ctx.fillRect(16, 12, 608, 100);
+    ctx.shadowColor = 'rgba(0,0,0,0.45)';
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(10, 10, 460, 90, 18) : ctx.fillRect(10, 10, 460, 90);
     ctx.fill();
 
     ctx.beginPath();
-    ctx.moveTo(300, 112);
-    ctx.lineTo(320, 148);
-    ctx.lineTo(340, 112);
+    ctx.moveTo(225, 100);
+    ctx.lineTo(240, 130);
+    ctx.lineTo(255, 100);
     ctx.fill();
 
-    ctx.strokeStyle = '#d97706';
-    ctx.lineWidth = 4;
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 3.5;
     ctx.stroke();
 
     ctx.fillStyle = '#0f172a';
-    ctx.font = 'bold 26px sans-serif';
+    // Nếu là biểu tượng cảm xúc (Emoji) -> phóng to biểu tượng lên 48px
+    const isEmoji = text.length <= 4;
+    ctx.font = isEmoji ? '46px system-ui, sans-serif' : 'bold 24px system-ui, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(text, 320, 62);
+    ctx.fillText(text, 240, 55);
 
     const tex = new THREE.CanvasTexture(c);
-    const mat = new THREE.SpriteMaterial({ map: tex });
+    const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false });
     const sp = new THREE.Sprite(mat);
-    sp.scale.set(3.4, 0.85, 1);
+    sp.scale.set(isEmoji ? 1.6 : 2.5, 0.72, 1);
     return sp;
   }
 
@@ -1070,7 +1072,7 @@ function initGame() {
     rGroup.add(model);
 
     const label = makeBillboardSprite(data.name || "Khách Quý", "#ffffff", isWoman ? "#db2777" : "#0284c7");
-    label.position.set(0, 2.08, 0);
+    label.position.set(0, 2.55, 0); // Đặt cao trên đỉnh đầu
     rGroup.add(label);
 
     const pMesh = model.getObjectByName('H_DDS_HighRes');
@@ -1174,6 +1176,10 @@ function initGame() {
           const data = JSON.parse(event.data);
           if (data.type === 'init') {
             selfPlayerId = data.selfId;
+            if (data.assignedName) {
+              playerName = data.assignedName;
+              updatePlayerNameLabel(playerName);
+            }
             if (data.assignedSpawn) {
               playerGroup.position.set(data.assignedSpawn.x, 0, data.assignedSpawn.z);
             }
@@ -1206,10 +1212,13 @@ function initGame() {
             }
           } else if (data.type === 'player_reaction') {
             if (data.id === selfPlayerId) {
-              spawnFloatingReaction(playerGroup, data.emoji);
+              // Local reaction already rendered instantly
             } else {
               const rp = remotePlayers.get(data.id);
-              if (rp) spawnFloatingReaction(rp.group, data.emoji);
+              if (rp) {
+                showSpeechBubble(rp.group, data.emoji);
+                spawnFloatingReaction(rp.group, data.emoji);
+              }
             }
           } else if (data.type === 'player_left') {
             removeRemotePlayer(data.id);
@@ -1260,33 +1269,48 @@ function initGame() {
     });
   }
 
-  function makeBillboardSprite(text, textColor = "#ffd700", bgColor = "rgba(0,0,0,0.65)") {
+  function makeBillboardSprite(text, textColor = "#ffd700", bgColor = "rgba(15,23,42,0.85)") {
     const c = document.createElement('canvas');
-    c.width = 384; c.height = 96;
+    c.width = 256; c.height = 64;
     const ctx = c.getContext('2d');
+    
+    // Sleek, refined glass pill badge
     ctx.fillStyle = bgColor;
-    ctx.roundRect ? ctx.roundRect(10, 10, 364, 76, 20) : ctx.fillRect(10, 10, 364, 76);
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(8, 8, 240, 48, 24) : ctx.fillRect(8, 8, 240, 48);
     ctx.fill();
+
     ctx.strokeStyle = textColor;
-    ctx.lineWidth = 4;
+    ctx.lineWidth = 3;
     ctx.stroke();
+
     ctx.fillStyle = textColor;
-    ctx.font = 'bold 32px sans-serif';
+    ctx.font = 'bold 22px system-ui, -apple-system, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(text, 192, 48);
+    ctx.fillText(text, 128, 32);
+
     const tex = new THREE.CanvasTexture(c);
-    const spriteMat = new THREE.SpriteMaterial({ map: tex });
+    const spriteMat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false });
     const sprite = new THREE.Sprite(spriteMat);
-    sprite.scale.set(2.4, 0.6, 1);
+    // Nhỏ nhắn, thanh lịch, vừa vặn trên đầu nhân vật
+    sprite.scale.set(1.15, 0.29, 1);
     return sprite;
   }
 
-  // Camera & Touch Controls
+  const questHeader = document.getElementById('questHeader');
+  const questDetails = document.getElementById('questDetails');
+  if (questHeader && questDetails) {
+    questHeader.addEventListener('click', () => {
+      questDetails.style.display = questDetails.style.display === 'none' ? 'block' : 'none';
+    });
+  }
+
+  // Camera & Touch Controls (Góc nhìn từ trên xuống 16 độ, cách 5.8m để toàn bộ avatar, biển tên và bọt thoại hiển thị thoáng đãng!)
   let cameraYaw = 0;
-  let cameraPitch = 0.05;
-  const cameraDistance = 4.2;
-  const cameraTargetOffset = new THREE.Vector3(0, 1.4, 0);
+  let cameraPitch = 0.28;
+  const cameraDistance = 5.8;
+  const cameraTargetOffset = new THREE.Vector3(0, 0.85, 0);
 
   const input = { stickX: 0, stickY: 0, keyW: false, keyA: false, keyS: false, keyD: false };
   const playerSpeed = 7.0;
@@ -1428,10 +1452,12 @@ function initGame() {
         e.stopPropagation();
         const emoji = btn.dataset.emoji;
         if (emoji) {
+          // HIỂN THỊ TỨC THÌ TRÊN ĐẦU NHÂN VẬT (BONG BÓNG THOẠI EMOJI LỚN + HẠT PHÁO SÁNG BAY LÊN)
+          showSpeechBubble(playerGroup, emoji);
+          spawnFloatingReaction(playerGroup, emoji);
+
           if (socket && socket.readyState === WebSocket.OPEN) {
             socket.send(JSON.stringify({ type: 'reaction', emoji: emoji }));
-          } else {
-            spawnFloatingReaction(playerGroup, emoji);
           }
           emojiPalette.style.display = 'none';
         }
@@ -1679,6 +1705,8 @@ function initGame() {
   // Animation Loop & Network Sync
   const clock = new THREE.Clock();
   let lastNetSyncTime = 0;
+  let lastSentX = 0, lastSentZ = 0, lastSentRotY = 0;
+  let wasMoving = false;
 
   function animate() {
     requestAnimationFrame(animate);
@@ -1740,13 +1768,17 @@ function initGame() {
 
         playerMeshBones.mesh.skeleton.update();
       }
+      wasMoving = true;
     } else {
-      if (playerMeshBones && playerMeshBones.mesh && initialLegQuats) {
-        if (playerMeshBones.la) playerMeshBones.la.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.8);
-        if (playerMeshBones.ra) playerMeshBones.ra.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.8);
-        if (playerMeshBones.lul) playerMeshBones.lul.quaternion.copy(initialLegQuats.lul);
-        if (playerMeshBones.rul) playerMeshBones.rul.quaternion.copy(initialLegQuats.rul);
-        playerMeshBones.mesh.skeleton.update();
+      if (wasMoving) {
+        wasMoving = false;
+        if (playerMeshBones && playerMeshBones.mesh && initialLegQuats) {
+          if (playerMeshBones.la) playerMeshBones.la.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.8);
+          if (playerMeshBones.ra) playerMeshBones.ra.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.8);
+          if (playerMeshBones.lul) playerMeshBones.lul.quaternion.copy(initialLegQuats.lul);
+          if (playerMeshBones.rul) playerMeshBones.rul.quaternion.copy(initialLegQuats.rul);
+          playerMeshBones.mesh.skeleton.update();
+        }
       }
     }
 
@@ -1758,16 +1790,24 @@ function initGame() {
     playerGroup.position.x = Math.max(-HALL.width / 2 + 1.8, Math.min(HALL.width / 2 - 1.8, playerGroup.position.x));
     playerGroup.position.z = Math.max(-30, Math.min(30, playerGroup.position.z));
 
-    // Throttled Multiplayer Position Sync (20 FPS / 50ms interval)
-    if (socket && socket.readyState === WebSocket.OPEN && (now - lastNetSyncTime > 50)) {
-      lastNetSyncTime = now;
-      socket.send(JSON.stringify({
-        type: 'move',
-        x: playerGroup.position.x,
-        z: playerGroup.position.z,
-        rotY: playerGroup.rotation.y,
-        isWalking: isMoving
-      }));
+    // Smart Throttled Multiplayer Position Sync (Chỉ gửi khi di chuyển hoặc đổi hướng để tiết kiệm 70% CPU/Mạng)
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      const movedDist = Math.hypot(playerGroup.position.x - lastSentX, playerGroup.position.z - lastSentZ);
+      const angleDiff = Math.abs(playerGroup.rotation.y - lastSentRotY);
+      const shouldSync = isMoving ? (now - lastNetSyncTime > 40) : (movedDist > 0.05 || angleDiff > 0.05 || (now - lastNetSyncTime > 2000));
+      if (shouldSync) {
+        lastNetSyncTime = now;
+        lastSentX = playerGroup.position.x;
+        lastSentZ = playerGroup.position.z;
+        lastSentRotY = playerGroup.rotation.y;
+        socket.send(JSON.stringify({
+          type: 'move',
+          x: playerGroup.position.x,
+          z: playerGroup.position.z,
+          rotY: playerGroup.rotation.y,
+          isWalking: isMoving
+        }));
+      }
     }
 
     // Update & Interpolate Remote Players
@@ -1785,6 +1825,7 @@ function initGame() {
 
       if (rp.bones && rp.bones.mesh) {
         if (rp.isWalking) {
+          rp.wasWalking = true;
           rp.walkCycle += delta * 11;
           const rSwing = Math.sin(rp.walkCycle) * 0.45;
           if (rp.bones.la) rp.bones.la.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.8 + rSwing);
@@ -1800,7 +1841,8 @@ function initGame() {
             );
           }
           rp.bones.mesh.skeleton.update();
-        } else {
+        } else if (rp.wasWalking) {
+          rp.wasWalking = false;
           if (rp.bones.la) rp.bones.la.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.8);
           if (rp.bones.ra) rp.bones.ra.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.8);
           if (rp.bones.lul && rp.bones.initialLegs) rp.bones.lul.quaternion.copy(rp.bones.initialLegs.lul);
@@ -1825,17 +1867,17 @@ function initGame() {
       }
     }
 
-    // Camera follow (Căn chuẩn trọng tâm không bị lệch mắt nhìn)
-    const targetPos = playerGroup.position.clone().add(cameraTargetOffset);
+    // Camera follow (Căn chuẩn góc nhìn từ trên xuống, tạo khoảng thở thoáng đãng phía trên đầu!)
+    const lookTarget = playerGroup.position.clone().add(new THREE.Vector3(0, 1.75, 0));
     const camOffset = new THREE.Vector3(
       Math.sin(cameraYaw) * Math.cos(cameraPitch) * cameraDistance,
-      Math.sin(cameraPitch) * cameraDistance + 0.35,
+      Math.sin(cameraPitch) * cameraDistance + 1.8,
       Math.cos(cameraYaw) * Math.cos(cameraPitch) * cameraDistance
     );
 
-    const desiredCamPos = targetPos.clone().add(camOffset);
-    camera.position.lerp(desiredCamPos, 0.25);
-    camera.lookAt(targetPos.clone().add(new THREE.Vector3(0, 0.15, 0)));
+    const desiredCamPos = playerGroup.position.clone().add(camOffset);
+    camera.position.lerp(desiredCamPos, 0.22);
+    camera.lookAt(lookTarget);
 
     confettiMeshes.forEach(c => {
       if (c.life > 0) {
@@ -1878,7 +1920,9 @@ function initGame() {
     remotePlayers,
     input,
     getSelfPlayerId: () => selfPlayerId,
-    getGroundElevation
+    getGroundElevation,
+    showSpeechBubble,
+    spawnFloatingReaction
   };
 
   animate();

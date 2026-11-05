@@ -109,9 +109,23 @@ wss.on('connection', (ws) => {
         const offsetIdx = (players.size) % SPAWN_OFFSETS.length;
         const defaultSpawn = SPAWN_OFFSETS[offsetIdx];
 
+        // Đảm bảo tên khách mời không bao giờ bị trùng nhau!
+        let rawName = (data.name || 'Khách Quý').trim().slice(0, 20);
+        if (!rawName) rawName = 'Khách Quý';
+
+        const existingNames = new Set();
+        players.forEach(p => existingNames.add(p.name.toLowerCase()));
+
+        let uniqueName = rawName;
+        let suffix = 2;
+        while (existingNames.has(uniqueName.toLowerCase())) {
+          uniqueName = `${rawName} #${suffix}`;
+          suffix++;
+        }
+
         const playerState = {
           id: ws.playerId,
-          name: (data.name || 'Khách Quý').slice(0, 24),
+          name: uniqueName,
           gender: data.gender === 'female' ? 'female' : 'male',
           x: defaultSpawn.x,
           z: defaultSpawn.z,
@@ -130,6 +144,7 @@ wss.on('connection', (ws) => {
         ws.send(JSON.stringify({
           type: 'init',
           selfId: ws.playerId,
+          assignedName: uniqueName,
           assignedSpawn: { x: playerState.x, z: playerState.z },
           players: existingList,
           onlineCount: players.size
