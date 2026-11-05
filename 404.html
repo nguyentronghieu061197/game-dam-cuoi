@@ -58,6 +58,15 @@
         <button class="dialogue-next-btn" id="dialogueNextBtn">Tiếp tục ➔</button>
       </div>
 
+      <!-- Gesture Action Bar (Quẩy, Vỗ Tay, Cụng Ly, Cười, Ngã) -->
+      <div id="gestureBar" style="position: absolute; bottom: 68px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; z-index: 45; pointer-events: auto; max-width: 95%; overflow-x: auto; padding: 2px;">
+        <button class="gesture-btn" data-anim="clap" title="Vỗ Tay" style="background: rgba(20,10,18,0.85); border: 1px solid #ffd700; color: #ffd700; padding: 6px 10px; border-radius: 16px; font-size: 12px; font-weight: bold; cursor: pointer; backdrop-filter: blur(8px); white-space: nowrap; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">👏 Vỗ Tay</button>
+        <button class="gesture-btn" data-anim="dance" title="Quẩy Nhạc Sống" style="background: rgba(20,10,18,0.85); border: 1px solid #ffd700; color: #ffd700; padding: 6px 10px; border-radius: 16px; font-size: 12px; font-weight: bold; cursor: pointer; backdrop-filter: blur(8px); white-space: nowrap; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">💃 Quẩy</button>
+        <button class="gesture-btn" data-anim="toast" title="Nâng Ly Cụng" style="background: rgba(20,10,18,0.85); border: 1px solid #ffd700; color: #ffd700; padding: 6px 10px; border-radius: 16px; font-size: 12px; font-weight: bold; cursor: pointer; backdrop-filter: blur(8px); white-space: nowrap; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">🍻 1-2-3 Zô</button>
+        <button class="gesture-btn" data-anim="laugh" title="Cười Khoái Chí" style="background: rgba(20,10,18,0.85); border: 1px solid #ffd700; color: #ffd700; padding: 6px 10px; border-radius: 16px; font-size: 12px; font-weight: bold; cursor: pointer; backdrop-filter: blur(8px); white-space: nowrap; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">😂 Cười</button>
+        <button class="gesture-btn" data-anim="stumble" title="Say Ngã" style="background: rgba(20,10,18,0.85); border: 1px solid #ffd700; color: #ffd700; padding: 6px 10px; border-radius: 16px; font-size: 12px; font-weight: bold; cursor: pointer; backdrop-filter: blur(8px); white-space: nowrap; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">🥴 Say Ngã</button>
+      </div>
+
       <!-- Chat Input & Emotion Reaction Overlay -->
       <div id="chatOverlay" style="position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 520px; z-index: 50; display: flex; gap: 8px; align-items: center; pointer-events: auto;">
         <button id="emojiPickerBtn" style="width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid rgba(255,215,0,0.8); background: rgba(20,10,18,0.85); font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.5); backdrop-filter: blur(8px);">💖</button>
@@ -107,13 +116,35 @@
           </p>
           <input type="text" class="gift-input" id="playerNameInput" placeholder="Tên của bạn (VD: Bạn Cấp 3, Đồng Nghiệp...)" value="Khách Quý" style="text-align: center; font-size: 16px; font-weight: bold; color: #ffd700; margin-bottom: 12px;">
           
-          <div style="display: flex; gap: 10px; margin-bottom: 15px; justify-content: center;">
+          <div style="display: flex; gap: 10px; margin-bottom: 12px; justify-content: center;">
             <label style="color: #fff; font-size: 14px; display: flex; align-items: center; gap: 5px; cursor: pointer; background: rgba(2, 132, 199, 0.4); padding: 8px 16px; border-radius: 20px; border: 1px solid #38bdf8;">
               <input type="radio" name="playerGender" value="male" checked> 🤵 Nam (Vest)
             </label>
             <label style="color: #fff; font-size: 14px; display: flex; align-items: center; gap: 5px; cursor: pointer; background: rgba(219, 39, 119, 0.4); padding: 8px 16px; border-radius: 20px; border: 1px solid #f472b6;">
               <input type="radio" name="playerGender" value="female"> 👗 Nữ (Váy Dạ Hội)
             </label>
+          </div>
+
+          <!-- Tủ Đồ Đi Ăn Cưới: Màu Vest/Váy & Phụ Kiện -->
+          <div style="background: rgba(0,0,0,0.4); border-radius: 14px; padding: 10px; margin-bottom: 15px; border: 1px solid rgba(255,215,0,0.3);">
+            <div style="font-size: 12px; color: #fde047; margin-bottom: 6px; font-weight: bold; text-align: center;">🎨 Màu Sắc Trang Phục:</div>
+            <div id="colorSwatches" style="display: flex; gap: 8px; justify-content: center; margin-bottom: 10px;">
+              <button type="button" class="color-swatch selected" data-color="#111827" style="width: 28px; height: 28px; border-radius: 50%; background: #111827; border: 2.5px solid #ffd700; cursor: pointer;" title="Vest Đen Lịch Lãm"></button>
+              <button type="button" class="color-swatch" data-color="#991b1b" style="width: 28px; height: 28px; border-radius: 50%; background: #991b1b; border: 2px solid #ffffff44; cursor: pointer;" title="Vest Đỏ Dân Chơi Hà Tây"></button>
+              <button type="button" class="color-swatch" data-color="#f8fafc" style="width: 28px; height: 28px; border-radius: 50%; background: #f8fafc; border: 2px solid #ffffff44; cursor: pointer;" title="Vest Trắng Bạch Mã"></button>
+              <button type="button" class="color-swatch" data-color="#1e3a8a" style="width: 28px; height: 28px; border-radius: 50%; background: #1e3a8a; border: 2px solid #ffffff44; cursor: pointer;" title="Vest Xanh Navy"></button>
+              <button type="button" class="color-swatch" data-color="#ca8a04" style="width: 28px; height: 28px; border-radius: 50%; background: #ca8a04; border: 2px solid #ffffff44; cursor: pointer;" title="Vàng Đồng Hoàng Gia"></button>
+            </div>
+
+            <div style="font-size: 12px; color: #fde047; margin-bottom: 6px; font-weight: bold; text-align: center;">✨ Phụ Kiện "Dân Chơi":</div>
+            <div style="display: flex; gap: 8px; justify-content: center; font-size: 12px; color: #fff;">
+              <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; background: rgba(255,255,255,0.08); padding: 5px 10px; border-radius: 12px; border: 1px solid rgba(255,215,0,0.4);">
+                <input type="checkbox" id="optGlasses" checked> 🕶️ Kính Đen Thug Life
+              </label>
+              <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; background: rgba(255,255,255,0.08); padding: 5px 10px; border-radius: 12px; border: 1px solid rgba(255,215,0,0.4);">
+                <input type="checkbox" id="optSlippers"> 🩴 Dép Tổ Ong
+              </label>
+            </div>
           </div>
 
           <button class="submit-btn" id="enterWeddingBtn">Bước Vào Rạp Cưới 🎊</button>

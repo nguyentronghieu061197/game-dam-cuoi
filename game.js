@@ -637,6 +637,11 @@ function initGame() {
   const chairMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.88, roughness: 0.22 });
   const cushionMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6 });
 
+  // Danh sách các ghế trống có thể ngồi vào ăn tiệc
+  const seatingSpots = [];
+  let isPlayerSeated = false;
+  let currentSeatedSpot = null;
+
   function makeChiavariChair() {
     const chair = new THREE.Group();
     const baseFrame = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.45, 0.44), chairMat);
@@ -957,6 +962,20 @@ function initGame() {
           poseFormalStanding(guest);
           freezeMeshGraph(guest);
           tGroup.add(guest);
+        } else {
+          // Ghế trống: Đăng ký thành điểm ngồi thông minh
+          const seatWorldX = pos.x + cx;
+          const seatWorldZ = pos.z + cz;
+          seatingSpots.push({
+            id: `seat_${tableIdx}_${i}`,
+            tableIdx: tableIdx,
+            chairIdx: i,
+            x: seatWorldX,
+            z: seatWorldZ,
+            rotY: -angle - Math.PI / 2,
+            chairMesh: chair,
+            occupied: false
+          });
         }
       }
 
@@ -1003,6 +1022,89 @@ function initGame() {
     initMultiplayer();
   });
 
+  // 3D Phụ Kiện "Dân Chơi": Kính Đen Thug Life & Dép Tổ Ong Huyền Thoại
+  let playerOutfitColor = "#111827";
+  let playerHasGlasses = true;
+  let playerHasSlippers = false;
+
+  function make3DGlasses() {
+    const glasses = new THREE.Group();
+    const frameMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0a, metalness: 0.95, roughness: 0.1 });
+    const lensMat = new THREE.MeshStandardMaterial({ color: 0x050505, metalness: 1.0, roughness: 0.02 });
+
+    const lLens = new THREE.Mesh(new THREE.BoxGeometry(0.8, 3.2, 4.4), lensMat);
+    lLens.position.set(0, 0, -3.2);
+    glasses.add(lLens);
+
+    const rLens = new THREE.Mesh(new THREE.BoxGeometry(0.8, 3.2, 4.4), lensMat);
+    rLens.position.set(0, 0, 3.2);
+    glasses.add(rLens);
+
+    const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.8, 2.0), frameMat);
+    bridge.position.set(0, 0.4, 0);
+    glasses.add(bridge);
+
+    const lTemple = new THREE.Mesh(new THREE.BoxGeometry(8.5, 0.6, 0.6), frameMat);
+    lTemple.position.set(-4.2, 0.4, -5.2);
+    glasses.add(lTemple);
+
+    const rTemple = new THREE.Mesh(new THREE.BoxGeometry(8.5, 0.6, 0.6), frameMat);
+    rTemple.position.set(-4.2, 0.4, 5.2);
+    glasses.add(rTemple);
+
+    // Tọa độ chuẩn theo trục xương Head (X tiến ra trước, Y cao độ mắt)
+    glasses.position.set(5.8, 8.05, 0);
+    return glasses;
+  }
+
+  function make3DSlipper() {
+    const slipper = new THREE.Group();
+    const soleMat = new THREE.MeshStandardMaterial({ color: 0xfef08a, roughness: 0.85 }); // Dép tổ ong vàng ngà huyền thoại
+    const strapMat = new THREE.MeshStandardMaterial({ color: 0xfef08a, roughness: 0.7 });
+
+    const sole = new THREE.Mesh(new THREE.BoxGeometry(10.0, 24.0, 3.2), soleMat);
+    sole.position.set(0, 8.5, -2.8);
+    slipper.add(sole);
+
+    const strap = new THREE.Mesh(new THREE.CylinderGeometry(5.2, 5.2, 9.8, 12, 1, false, 0, Math.PI), strapMat);
+    strap.rotation.z = Math.PI / 2;
+    strap.position.set(0, 10.0, 0.5);
+    slipper.add(strap);
+
+    return slipper;
+  }
+
+  function attachAccessories(model, hasGlasses, hasSlippers) {
+    if (hasGlasses) {
+      const head = model.getObjectByName('Head');
+      if (head) {
+        const gl = make3DGlasses();
+        head.add(gl);
+      }
+    }
+    if (hasSlippers) {
+      const lFoot = model.getObjectByName('LeftFoot');
+      const rFoot = model.getObjectByName('RightFoot');
+      if (lFoot && rFoot) {
+        const slL = make3DSlipper();
+        lFoot.add(slL);
+
+        const slR = make3DSlipper();
+        rFoot.add(slR);
+      }
+    }
+  }
+
+  function applyOutfitColor(model, hexColor) {
+    if (!hexColor || hexColor === '#111827') return;
+    const mesh = model.getObjectByName('H_DDS_HighRes');
+    if (mesh && mesh.material) {
+      mesh.material = mesh.material.clone();
+      mesh.material.color = new THREE.Color(hexColor);
+      mesh.material.roughness = 0.4;
+    }
+  }
+
   let currentPlayerModel = null;
 
   function setupPlayerAvatar() {
@@ -1017,6 +1119,9 @@ function initGame() {
     const model = cloneSkinnedGltf(tmpl);
     model.scale.set(1.35, 1.35, 1.35);
 
+    applyOutfitColor(model, playerOutfitColor);
+    attachAccessories(model, playerHasGlasses, playerHasSlippers);
+
     poseFormalStanding(model);
     playerGroup.add(model);
     currentPlayerModel = model;
@@ -1025,16 +1130,22 @@ function initGame() {
     if (pMesh && pMesh.skeleton) {
       const lul = pMesh.skeleton.bones.find(b => b.name === 'LeftUpLeg');
       const rul = pMesh.skeleton.bones.find(b => b.name === 'RightUpLeg');
+      const ll = pMesh.skeleton.bones.find(b => b.name === 'LeftLeg');
+      const rl = pMesh.skeleton.bones.find(b => b.name === 'RightLeg');
       initialLegQuats = {
         lul: lul ? lul.quaternion.clone() : new THREE.Quaternion(),
-        rul: rul ? rul.quaternion.clone() : new THREE.Quaternion()
+        rul: rul ? rul.quaternion.clone() : new THREE.Quaternion(),
+        ll: ll ? ll.quaternion.clone() : new THREE.Quaternion(),
+        rl: rl ? rl.quaternion.clone() : new THREE.Quaternion()
       };
       playerMeshBones = {
         mesh: pMesh,
         la: pMesh.skeleton.bones.find(b => b.name === 'LeftArm'),
         ra: pMesh.skeleton.bones.find(b => b.name === 'RightArm'),
         lul: lul,
-        rul: rul
+        rul: rul,
+        ll: ll,
+        rl: rl
       };
     }
   }
@@ -1068,6 +1179,9 @@ function initGame() {
     const model = cloneSkinnedGltf(tmpl);
     model.scale.set(1.35, 1.35, 1.35);
 
+    applyOutfitColor(model, data.outfitColor || '#111827');
+    attachAccessories(model, data.hasGlasses !== false, !!data.hasSlippers);
+
     poseFormalStanding(model);
     rGroup.add(model);
 
@@ -1081,9 +1195,13 @@ function initGame() {
     if (pMesh && pMesh.skeleton) {
       const lul = pMesh.skeleton.bones.find(b => b.name === 'LeftUpLeg');
       const rul = pMesh.skeleton.bones.find(b => b.name === 'RightUpLeg');
+      const ll = pMesh.skeleton.bones.find(b => b.name === 'LeftLeg');
+      const rl = pMesh.skeleton.bones.find(b => b.name === 'RightLeg');
       rInitLegs = {
         lul: lul ? lul.quaternion.clone() : new THREE.Quaternion(),
-        rul: rul ? rul.quaternion.clone() : new THREE.Quaternion()
+        rul: rul ? rul.quaternion.clone() : new THREE.Quaternion(),
+        ll: ll ? ll.quaternion.clone() : new THREE.Quaternion(),
+        rl: rl ? rl.quaternion.clone() : new THREE.Quaternion()
       };
       rBones = {
         mesh: pMesh,
@@ -1091,6 +1209,8 @@ function initGame() {
         ra: pMesh.skeleton.bones.find(b => b.name === 'RightArm'),
         lul: lul,
         rul: rul,
+        ll: ll,
+        rl: rl,
         initialLegs: rInitLegs
       };
     }
@@ -1101,10 +1221,14 @@ function initGame() {
       group: rGroup,
       model: model,
       bones: rBones,
+      label: label,
       targetX: data.x || 0,
       targetZ: data.z || 2,
       targetRotY: data.rotY || 0,
       isWalking: false,
+      isSeated: !!data.isSeated,
+      currentAnim: data.currentAnim || 'idle',
+      animTime: 0,
       walkCycle: 0
     });
   }
@@ -1151,6 +1275,9 @@ function initGame() {
         type: 'join',
         name: playerName,
         gender: playerGender,
+        outfitColor: playerOutfitColor,
+        hasGlasses: playerHasGlasses,
+        hasSlippers: playerHasSlippers,
         x: playerGroup.position.x,
         z: playerGroup.position.z
       }));
@@ -1243,6 +1370,24 @@ function initGame() {
                 spawnFloatingReaction(rp.group, data.emoji);
               }
             }
+          } else if (data.type === 'player_anim') {
+            const rp = remotePlayers.get(data.id);
+            if (rp) {
+              rp.currentAnim = data.action;
+              rp.animTime = 0;
+            }
+          } else if (data.type === 'player_sit') {
+            const rp = remotePlayers.get(data.id);
+            if (rp) {
+              rp.isSeated = !!data.seated;
+              if (rp.isSeated && data.seatX !== undefined) {
+                rp.group.position.set(data.seatX, -0.42, data.seatZ);
+                rp.group.rotation.y = data.seatAngle;
+                rp.targetX = data.seatX;
+                rp.targetZ = data.seatZ;
+                rp.targetRotY = data.seatAngle;
+              }
+            }
           } else if (data.type === 'player_left') {
             removeRemotePlayer(data.id);
             updateOnlineCountBadge(data.onlineCount);
@@ -1292,34 +1437,60 @@ function initGame() {
     });
   }
 
-  function makeBillboardSprite(text, textColor = "#ffd700", bgColor = "rgba(15,23,42,0.85)") {
+  function makeBillboardSprite(text, textColor = "#ffd700", bgColor = "rgba(15,23,42,0.88)") {
     const c = document.createElement('canvas');
-    c.width = 256; c.height = 64;
+    c.width = 200; c.height = 48;
     const ctx = c.getContext('2d');
     
-    // Sleek, refined glass pill badge
+    // Gọn gàng, thanh mảnh, giảm 35-40% diện tích chiếm màn hình
     ctx.fillStyle = bgColor;
     ctx.beginPath();
-    ctx.roundRect ? ctx.roundRect(8, 8, 240, 48, 24) : ctx.fillRect(8, 8, 240, 48);
+    ctx.roundRect ? ctx.roundRect(6, 6, 188, 36, 18) : ctx.fillRect(6, 6, 188, 36);
     ctx.fill();
 
     ctx.strokeStyle = textColor;
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 2.2;
     ctx.stroke();
 
     ctx.fillStyle = textColor;
-    ctx.font = 'bold 22px system-ui, -apple-system, sans-serif';
+    ctx.font = 'bold 17px system-ui, -apple-system, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(text, 128, 32);
+    ctx.fillText(text, 100, 24);
 
     const tex = new THREE.CanvasTexture(c);
     const spriteMat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false });
     const sprite = new THREE.Sprite(spriteMat);
-    // Nhỏ nhắn, thanh lịch, vừa vặn trên đầu nhân vật
-    sprite.scale.set(1.15, 0.29, 1);
+    // Tinh tế, vừa vặn, không che chắn tầm nhìn
+    sprite.scale.set(0.72, 0.18, 1);
     return sprite;
   }
+
+  // Thu phóng Camera mượt mà (Mouse Wheel trên máy tính & Pinch-to-zoom trên điện thoại)
+  window.addEventListener('wheel', e => {
+    cameraDistance += e.deltaY * 0.005;
+    cameraDistance = Math.max(2.5, Math.min(12.0, cameraDistance));
+  }, { passive: true });
+
+  let initialPinchDist = null;
+  let initialCamDist = 5.8;
+  window.addEventListener('touchmove', e => {
+    if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.hypot(dx, dy);
+      if (initialPinchDist === null) {
+        initialPinchDist = dist;
+        initialCamDist = cameraDistance;
+      } else {
+        const factor = initialPinchDist / Math.max(1, dist);
+        cameraDistance = Math.max(2.5, Math.min(12.0, initialCamDist * factor));
+      }
+    }
+  }, { passive: true });
+  window.addEventListener('touchend', e => {
+    if (e.touches.length < 2) initialPinchDist = null;
+  }, { passive: true });
 
   const questHeader = document.getElementById('questHeader');
   const questDetails = document.getElementById('questDetails');
@@ -1432,6 +1603,14 @@ function initGame() {
   const actionBtn = document.getElementById('actionBtn');
 
   actionBtn.addEventListener('click', () => {
+    if (isPlayerSeated) {
+      standUpFromSeat();
+      return;
+    }
+    if (gameState.seatingTarget) {
+      sitDownAtSeat(gameState.seatingTarget);
+      return;
+    }
     if (gameState.interactionTarget) triggerInteraction(gameState.interactionTarget);
   });
 
@@ -1533,6 +1712,143 @@ function initGame() {
     });
   }
 
+  // Color swatches & Phụ kiện
+  document.querySelectorAll('.color-swatch').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.color-swatch').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      playerOutfitColor = btn.dataset.color || '#111827';
+    });
+  });
+
+  const optGlasses = document.getElementById('optGlasses');
+  const optSlippers = document.getElementById('optSlippers');
+
+  // Gesture Action Buttons (Vỗ tay, Quẩy, 1-2-3 Zô, Cười, Ngã Say)
+  document.querySelectorAll('.gesture-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const anim = btn.dataset.anim;
+      if (anim) triggerActionGesture(anim);
+    });
+  });
+
+  let currentActionAnim = null;
+  let actionAnimTimer = 0;
+
+  function triggerActionGesture(animName) {
+    if (isPlayerSeated && animName === 'stumble') return;
+    currentActionAnim = animName;
+    actionAnimTimer = 4.5;
+
+    if (animName === 'clap') {
+      playSound('cheer');
+      showSpeechBubble(playerGroup, "👏 Hay quá!");
+      spawnFloatingReaction(playerGroup, "👏");
+    } else if (animName === 'dance') {
+      showSpeechBubble(playerGroup, "💃 Quẩy lên!");
+      spawnFloatingReaction(playerGroup, "🥳");
+    } else if (animName === 'toast') {
+      playSound('clink');
+      showSpeechBubble(playerGroup, "🍻 1-2-3 DÔ!");
+      spawnFloatingReaction(playerGroup, "🥂");
+    } else if (animName === 'laugh') {
+      playSound('cheer');
+      showSpeechBubble(playerGroup, "😂 Ha ha ha!");
+      spawnFloatingReaction(playerGroup, "🤣");
+    } else if (animName === 'stumble') {
+      showSpeechBubble(playerGroup, "🥴 Say quá rồi...");
+      spawnFloatingReaction(playerGroup, "💫");
+    }
+
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({ type: 'anim', action: animName }));
+    }
+  }
+
+  function sitDownAtSeat(spot) {
+    if (isPlayerSeated) return;
+    isPlayerSeated = true;
+    currentSeatedSpot = spot;
+    spot.occupied = true;
+
+    playerGroup.position.set(spot.x, -0.42, spot.z);
+    playerGroup.rotation.y = spot.rotY;
+    currentFacingAngle = spot.rotY;
+
+    if (playerMeshBones && playerMeshBones.mesh && initialLegQuats) {
+      if (playerMeshBones.lul) {
+        playerMeshBones.lul.quaternion.copy(initialLegQuats.lul).multiply(
+          new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI / 2.2)
+        );
+      }
+      if (playerMeshBones.rul) {
+        playerMeshBones.rul.quaternion.copy(initialLegQuats.rul).multiply(
+          new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), -Math.PI / 2.2)
+        );
+      }
+      if (playerMeshBones.ll) {
+        playerMeshBones.ll.quaternion.copy(initialLegQuats.ll).multiply(
+          new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), -Math.PI / 2.1)
+        );
+      }
+      if (playerMeshBones.rl) {
+        playerMeshBones.rl.quaternion.copy(initialLegQuats.rl).multiply(
+          new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI / 2.1)
+        );
+      }
+      playerMeshBones.mesh.skeleton.update();
+    }
+
+    cameraDistance = 4.2;
+    cameraPitch = 0.28;
+
+    gameState.quests.eat = true;
+    updateQuestUI();
+
+    playSound('clink');
+    showSpeechBubble(playerGroup, "🍗 Mâm cỗ 80 triệu ngon quá!");
+    spawnFloatingReaction(playerGroup, "🥂");
+
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({
+        type: 'sit',
+        seated: true,
+        seatId: spot.id,
+        seatX: spot.x,
+        seatZ: spot.z,
+        seatAngle: spot.rotY
+      }));
+    }
+  }
+
+  function standUpFromSeat() {
+    if (!isPlayerSeated) return;
+    isPlayerSeated = false;
+    if (currentSeatedSpot) {
+      currentSeatedSpot.occupied = false;
+      currentSeatedSpot = null;
+    }
+
+    playerGroup.position.y = 0;
+    if (playerMeshBones && playerMeshBones.mesh && initialLegQuats) {
+      if (playerMeshBones.lul) playerMeshBones.lul.quaternion.copy(initialLegQuats.lul);
+      if (playerMeshBones.rul) playerMeshBones.rul.quaternion.copy(initialLegQuats.rul);
+      if (playerMeshBones.ll) playerMeshBones.ll.quaternion.copy(initialLegQuats.ll);
+      if (playerMeshBones.rl) playerMeshBones.rl.quaternion.copy(initialLegQuats.rl);
+      playerMeshBones.mesh.skeleton.update();
+    }
+
+    cameraDistance = 5.8;
+
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({
+        type: 'sit',
+        seated: false
+      }));
+    }
+  }
+
   if (enterWeddingBtn) {
     enterWeddingBtn.addEventListener('click', () => {
       if (playerNameInput && playerNameInput.value.trim()) {
@@ -1544,6 +1860,10 @@ function initGame() {
       genderRadios.forEach(r => {
         if (r.checked) playerGender = r.value;
       });
+
+      if (optGlasses) playerHasGlasses = optGlasses.checked;
+      if (optSlippers) playerHasSlippers = optSlippers.checked;
+
       setupPlayerAvatar();
 
       // Send join event to server
@@ -1747,7 +2067,11 @@ function initGame() {
     const inputLen = Math.hypot(moveX, moveZ);
     let isMoving = inputLen > 0.05;
 
-    if (isMoving) {
+    if (isMoving && isPlayerSeated) {
+      standUpFromSeat();
+    }
+
+    if (isMoving && !isPlayerSeated) {
       const normX = moveX / Math.max(1, inputLen);
       const normZ = moveZ / Math.max(1, inputLen);
 
@@ -1792,7 +2116,7 @@ function initGame() {
         playerMeshBones.mesh.skeleton.update();
       }
       wasMoving = true;
-    } else {
+    } else if (!isPlayerSeated) {
       if (wasMoving) {
         wasMoving = false;
         if (playerMeshBones && playerMeshBones.mesh && initialLegQuats) {
@@ -1803,15 +2127,78 @@ function initGame() {
           playerMeshBones.mesh.skeleton.update();
         }
       }
+
+      // Procedural Gesture Animations (Vỗ tay, Quẩy, Cụng ly, Cười, Ngã)
+      if (currentActionAnim && actionAnimTimer > 0 && playerMeshBones && playerMeshBones.mesh) {
+        actionAnimTimer -= delta;
+        const t = performance.now() * 0.007;
+        if (currentActionAnim === 'clap') {
+          const clapSwing = Math.sin(t * 18) * 0.35;
+          if (playerMeshBones.la) playerMeshBones.la.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -0.6 + clapSwing);
+          if (playerMeshBones.ra) playerMeshBones.ra.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), 0.6 - clapSwing);
+        } else if (currentActionAnim === 'dance') {
+          const danceSwing = Math.sin(t * 11) * 0.65;
+          if (playerMeshBones.la) playerMeshBones.la.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 3 + danceSwing);
+          if (playerMeshBones.ra) playerMeshBones.ra.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 3 - danceSwing);
+          playerGroup.rotation.y = currentFacingAngle + Math.sin(t * 9) * 0.22;
+        } else if (currentActionAnim === 'toast') {
+          if (playerMeshBones.ra) playerMeshBones.ra.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 1.5);
+          if (playerMeshBones.la) playerMeshBones.la.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 3.2);
+        } else if (currentActionAnim === 'laugh') {
+          const shake = Math.sin(t * 22) * 0.14;
+          if (playerMeshBones.la) playerMeshBones.la.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.6 + shake);
+          if (playerMeshBones.ra) playerMeshBones.ra.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.6 - shake);
+        } else if (currentActionAnim === 'stumble') {
+          const stumbleWobble = Math.sin(t * 7) * 0.45;
+          playerGroup.rotation.z = stumbleWobble * 0.2;
+          if (playerMeshBones.la) playerMeshBones.la.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 1), stumbleWobble);
+          if (playerMeshBones.ra) playerMeshBones.ra.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, -1), -stumbleWobble);
+        }
+        if (actionAnimTimer <= 0) {
+          currentActionAnim = null;
+          playerGroup.rotation.z = 0;
+          if (playerMeshBones.la) playerMeshBones.la.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.8);
+          if (playerMeshBones.ra) playerMeshBones.ra.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.8);
+        }
+        playerMeshBones.mesh.skeleton.update();
+      }
     }
 
     // Nâng hạ độ cao mượt mà theo mặt sàn & bậc tam cấp dẫn lên sân khấu lễ cưới!
-    const groundElevation = getGroundElevation(playerGroup.position.x, playerGroup.position.z);
-    const bobbing = isMoving ? Math.abs(Math.sin(walkCycle * 2)) * 0.05 : 0;
-    playerGroup.position.y += (groundElevation + bobbing - playerGroup.position.y) * Math.min(1, delta * 15);
+    if (isPlayerSeated && currentSeatedSpot) {
+      playerGroup.position.set(currentSeatedSpot.x, -0.46, currentSeatedSpot.z);
+      playerGroup.rotation.y = currentSeatedSpot.rotY;
+      if (playerMeshBones && playerMeshBones.mesh && initialLegQuats) {
+        if (playerMeshBones.lul) {
+          playerMeshBones.lul.quaternion.copy(initialLegQuats.lul).multiply(
+            new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI / 2.2)
+          );
+        }
+        if (playerMeshBones.rul) {
+          playerMeshBones.rul.quaternion.copy(initialLegQuats.rul).multiply(
+            new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), -Math.PI / 2.2)
+          );
+        }
+        if (playerMeshBones.ll) {
+          playerMeshBones.ll.quaternion.copy(initialLegQuats.ll).multiply(
+            new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), -Math.PI / 2.1)
+          );
+        }
+        if (playerMeshBones.rl) {
+          playerMeshBones.rl.quaternion.copy(initialLegQuats.rl).multiply(
+            new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI / 2.1)
+          );
+        }
+        playerMeshBones.mesh.skeleton.update();
+      }
+    } else {
+      const groundElevation = getGroundElevation(playerGroup.position.x, playerGroup.position.z);
+      const bobbing = isMoving ? Math.abs(Math.sin(walkCycle * 2)) * 0.05 : 0;
+      playerGroup.position.y += (groundElevation + bobbing - playerGroup.position.y) * Math.min(1, delta * 15);
 
-    playerGroup.position.x = Math.max(-HALL.width / 2 + 1.8, Math.min(HALL.width / 2 - 1.8, playerGroup.position.x));
-    playerGroup.position.z = Math.max(-30, Math.min(30, playerGroup.position.z));
+      playerGroup.position.x = Math.max(-HALL.width / 2 + 1.8, Math.min(HALL.width / 2 - 1.8, playerGroup.position.x));
+      playerGroup.position.z = Math.max(-30, Math.min(30, playerGroup.position.z));
+    }
 
     // Smart Throttled Multiplayer Position Sync (Chỉ gửi khi di chuyển hoặc đổi hướng để tiết kiệm 70% CPU/Mạng)
     if (socket && socket.readyState === WebSocket.OPEN) {
@@ -1847,7 +2234,30 @@ function initGame() {
       rp.group.rotation.y += rDiff * Math.min(1, delta * 12);
 
       if (rp.bones && rp.bones.mesh) {
-        if (rp.isWalking) {
+        if (rp.isSeated) {
+          // Tư thế ngồi ăn tiệc tự nhiên cho khách mời từ xa
+          if (rp.bones.lul && rp.bones.initialLegs) {
+            rp.bones.lul.quaternion.copy(rp.bones.initialLegs.lul).multiply(
+              new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI / 2.2)
+            );
+          }
+          if (rp.bones.rul && rp.bones.initialLegs) {
+            rp.bones.rul.quaternion.copy(rp.bones.initialLegs.rul).multiply(
+              new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), -Math.PI / 2.2)
+            );
+          }
+          if (rp.bones.ll && rp.bones.initialLegs) {
+            rp.bones.ll.quaternion.copy(rp.bones.initialLegs.ll).multiply(
+              new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), -Math.PI / 2.1)
+            );
+          }
+          if (rp.bones.rl && rp.bones.initialLegs) {
+            rp.bones.rl.quaternion.copy(rp.bones.initialLegs.rl).multiply(
+              new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI / 2.1)
+            );
+          }
+          rp.bones.mesh.skeleton.update();
+        } else if (rp.isWalking) {
           rp.wasWalking = true;
           rp.walkCycle += delta * 11;
           const rSwing = Math.sin(rp.walkCycle) * 0.45;
@@ -1864,6 +2274,29 @@ function initGame() {
             );
           }
           rp.bones.mesh.skeleton.update();
+        } else if (rp.currentAnim && rp.currentAnim !== 'idle') {
+          // Hoạt ảnh biểu cảm cử chỉ cho người chơi từ xa
+          rp.animTime = (rp.animTime || 0) + delta;
+          const rt = rp.animTime * 6;
+          if (rp.currentAnim === 'clap') {
+            const cSw = Math.sin(rt * 16) * 0.35;
+            if (rp.bones.la) rp.bones.la.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -0.6 + cSw);
+            if (rp.bones.ra) rp.bones.ra.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), 0.6 - cSw);
+          } else if (rp.currentAnim === 'dance') {
+            const dSw = Math.sin(rt * 11) * 0.65;
+            if (rp.bones.la) rp.bones.la.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 3 + dSw);
+            if (rp.bones.ra) rp.bones.ra.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 3 - dSw);
+          } else if (rp.currentAnim === 'toast') {
+            if (rp.bones.ra) rp.bones.ra.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 1.5);
+          } else if (rp.currentAnim === 'stumble') {
+            const sWob = Math.sin(rt * 7) * 0.45;
+            rp.group.rotation.z = sWob * 0.2;
+          }
+          if (rp.animTime > 4.5) {
+            rp.currentAnim = 'idle';
+            rp.group.rotation.z = 0;
+          }
+          rp.bones.mesh.skeleton.update();
         } else if (rp.wasWalking) {
           rp.wasWalking = false;
           if (rp.bones.la) rp.bones.la.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2.8);
@@ -1872,6 +2305,20 @@ function initGame() {
           if (rp.bones.rul && rp.bones.initialLegs) rp.bones.rul.quaternion.copy(rp.bones.initialLegs.rul);
           rp.bones.mesh.skeleton.update();
         }
+      }
+    });
+
+    // Distance LOD cho biển tên nhân vật (Gần rõ chữ, xa tự thu nhỏ & mờ nhẹ để không rối mắt)
+    const localCamDist = camera.position.distanceTo(playerGroup.position);
+    const localFactor = Math.max(0.55, Math.min(1.0, 5.2 / Math.max(1, localCamDist)));
+    playerLabel.scale.set(0.72 * localFactor, 0.18 * localFactor, 1);
+
+    remotePlayers.forEach(rp => {
+      if (rp.label) {
+        const rDist = camera.position.distanceTo(rp.group.position);
+        const rFactor = Math.max(0.42, Math.min(1.0, 5.2 / Math.max(1, rDist)));
+        rp.label.scale.set(0.72 * rFactor, 0.18 * rFactor, 1);
+        rp.label.material.opacity = rDist > 16 ? 0.4 : 1.0;
       }
     });
 
@@ -1915,9 +2362,23 @@ function initGame() {
       }
     });
 
+    // Quét điểm ngồi thông minh & tương tác
+    gameState.seatingTarget = null;
     gameState.interactionTarget = null;
     const px = playerGroup.position.x;
     const pz = playerGroup.position.z;
+
+    if (!isPlayerSeated) {
+      for (const spot of seatingSpots) {
+        if (!spot.occupied) {
+          const d = Math.hypot(px - spot.x, pz - spot.z);
+          if (d < 2.2) {
+            gameState.seatingTarget = spot;
+            break;
+          }
+        }
+      }
+    }
 
     for (const zone of zones) {
       const d = Math.hypot(px - zone.x, pz - zone.z);
@@ -1927,7 +2388,13 @@ function initGame() {
       }
     }
 
-    if (gameState.interactionTarget) {
+    if (isPlayerSeated) {
+      interactPrompt.style.display = 'block';
+      interactPrompt.textContent = "🚶 Bấm A: Đứng Dậy Rời Bàn";
+    } else if (gameState.seatingTarget) {
+      interactPrompt.style.display = 'block';
+      interactPrompt.textContent = `🪑 Bấm A: Ngồi Vào Bàn Tiệc (Bàn ${gameState.seatingTarget.tableIdx + 1})`;
+    } else if (gameState.interactionTarget) {
       interactPrompt.style.display = 'block';
       interactPrompt.textContent = `Bấm A: ${gameState.interactionTarget.prompt}`;
     } else {
@@ -1945,7 +2412,12 @@ function initGame() {
     getSelfPlayerId: () => selfPlayerId,
     getGroundElevation,
     showSpeechBubble,
-    spawnFloatingReaction
+    spawnFloatingReaction,
+    seatingSpots,
+    isPlayerSeated: () => isPlayerSeated,
+    sitDownAtSeat,
+    standUpFromSeat,
+    triggerActionGesture
   };
 
   animate();

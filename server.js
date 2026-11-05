@@ -127,10 +127,15 @@ wss.on('connection', (ws) => {
           id: ws.playerId,
           name: uniqueName,
           gender: data.gender === 'female' ? 'female' : 'male',
+          outfitColor: data.outfitColor || '#111827',
+          hasGlasses: data.hasGlasses !== undefined ? !!data.hasGlasses : true,
+          hasSlippers: !!data.hasSlippers,
           x: defaultSpawn.x,
           z: defaultSpawn.z,
           rotY: Math.PI, // Facing forward towards stage!
           isWalking: false,
+          isSeated: false,
+          currentAnim: 'idle',
           lastUpdate: Date.now()
         };
         players.set(ws, playerState);
@@ -199,6 +204,37 @@ wss.on('connection', (ws) => {
             emoji: emoji
           });
           console.log(`[🎉] Reaction from ${p ? p.name : ws.playerId}: ${emoji}`);
+        }
+      } else if (data.type === 'anim') {
+        const p = players.get(ws);
+        const action = data.action;
+        if (p && action) {
+          p.currentAnim = action;
+          broadcastExcept(ws, {
+            type: 'player_anim',
+            id: ws.playerId,
+            action: action
+          });
+          console.log(`[💃] Animation gesture from ${p.name}: ${action}`);
+        }
+      } else if (data.type === 'sit') {
+        const p = players.get(ws);
+        if (p) {
+          p.isSeated = !!data.seated;
+          p.seatId = data.seatId || null;
+          p.seatX = data.seatX;
+          p.seatZ = data.seatZ;
+          p.seatAngle = data.seatAngle;
+          broadcastExcept(ws, {
+            type: 'player_sit',
+            id: ws.playerId,
+            seated: p.isSeated,
+            seatId: p.seatId,
+            seatX: p.seatX,
+            seatZ: p.seatZ,
+            seatAngle: p.seatAngle
+          });
+          console.log(`[🪑] Seating change for ${p.name}: ${p.isSeated ? 'Sitting' : 'Standing'}`);
         }
       }
     } catch (e) {

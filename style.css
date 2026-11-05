@@ -324,6 +324,22 @@ canvas#gameCanvas {
   color: white;
 }
 
+.color-swatch {
+  transition: transform 0.15s, border-color 0.15s;
+}
+.color-swatch.selected {
+  border: 3px solid #ffd700 !important;
+  transform: scale(1.15);
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.7);
+}
+.gesture-btn {
+  transition: transform 0.12s, background 0.12s;
+}
+.gesture-btn:active {
+  transform: scale(0.92);
+  background: rgba(234, 179, 8, 0.4) !important;
+}
+
 .gift-input {
   width: 100%;
   background: rgba(0, 0, 0, 0.4);
